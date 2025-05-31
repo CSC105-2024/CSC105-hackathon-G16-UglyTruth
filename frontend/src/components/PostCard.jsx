@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { ThumbsUp, Eye, TriangleAlert } from 'lucide-react';
+import { HeartCrack, Eye, TriangleAlert } from 'lucide-react';
 
 
 
@@ -31,7 +31,7 @@ PostCard.defaultProps = {
 
   return (
     <div
-      className="lg:w-[550px] bg-sage rounded-xl p-4 border  border-cream cursor-pointer transition-all duration-300"
+      className=" bg-sage rounded-xl p-4 border  border-cream cursor-pointer transition-all duration-300"
       onClick={() => setExpanded(!expanded)}
     >
       <h3 className="text-lg font-bold text-linen mb-2">{title}</h3>
@@ -53,12 +53,12 @@ PostCard.defaultProps = {
       <div className="flex items-center justify-between text-sm text-linen font-semibold">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1"><Eye size={16} /> {views}</span>
-          <span className="flex items-center gap-1"><ThumbsUp size={16} /> {likes}</span>
+          <span className="flex items-center gap-1"><HeartCrack size={16}/> {likes}</span>
         </div>
 
         {expanded && (
-          <button className="bg-linen text-cream px-3 py-1 rounded-xl hover:bg-opacity-90">
-            Like
+          <button className="bg-linen text-midnight font-pica px-3 py-1 rounded-xl cursor-pointer transition-colors">
+            Relatable
           </button>
         )}
       </div>
