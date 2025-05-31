@@ -41,7 +41,7 @@ const SideBar = () => {
   };
 
   const handleCreatePost = () => {
-    navigate('/create');
+    navigate('/create-post');
     if (!isDesktop) setIsOpen(false);
   };
 
