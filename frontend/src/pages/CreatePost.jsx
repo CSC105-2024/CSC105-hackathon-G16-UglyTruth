@@ -5,6 +5,7 @@ import { usePost } from '../contexts/PostContext';
 import { Mic, FileAudio, Send, Loader2 } from 'lucide-react';
 
 const CreatePost = () => {
+<<<<<<< HEAD
   const { isAuthenticated } = useAuth();
   const { createPost, isLoading } = usePost();
   const navigate = useNavigate();
@@ -175,6 +176,12 @@ const CreatePost = () => {
   };
 
   return (    <div className="max-w-2xl mx-auto p-4">
+=======
+  return (
+    <div>
+      <SideBar />
+      return (    <div className="max-w-2xl mx-auto p-4">
+>>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Share Your Experience</h1>
       
       <p className="text-sm text-gray-600 mb-4">
@@ -353,6 +360,11 @@ const CreatePost = () => {
           </button>
         </div>
       </form>
+<<<<<<< HEAD
+=======
+    </div>
+  );
+>>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
     </div>
   );
 };

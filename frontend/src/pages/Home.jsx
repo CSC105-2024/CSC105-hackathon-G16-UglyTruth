@@ -4,6 +4,8 @@ import PostCard from '../components/PostCard';
 import PostCounter from '../components/PostCounter';
 import { usePost } from '../contexts/PostContext';
 import Filter from '../components/Filter'; 
+import { Search } from 'lucide-react';
+import SideBarMobile from '../components/SideBarMobile';
 
 const Home = () => {
   const { posts, fetchPosts, isLoading, searchPosts } = usePost();
@@ -31,11 +33,42 @@ const Home = () => {
     loadPosts();
   }, [fetchPosts]);
 
+<<<<<<< HEAD
   useEffect(() => {
     if (posts.length > 0) {
       setAllPosts(posts);
     }
   }, [posts]);
+=======
+
+const mockPosts = [
+  {
+    id: 1,
+    title: "Overwhelmed by School",
+    content: "I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. ",
+    tag: presetTags[3], // "School"
+    warning: true,
+    views: 42,
+    likes: 15,
+  },
+  {
+    id: 2,
+    title: "Simple Joys with Friends",
+    content: "Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count!",
+    tag: presetTags[1], // "Friends"
+    views: 58,
+    likes: 22,
+  },
+  {
+    id: 3,
+    title: "Work Stress Again",
+    content: "Work stress is piling up again. Just needed to let it out anonymously. Work stress is piling up again. Just needed to let it out anonymously. Work stress is piling up again. Just needed to let it out anonymously. Work stress is piling up again. Just needed to let it out anonymously.",
+    tag: presetTags[4], // "Work"
+    views: 30,
+    likes: 9,
+  },
+];
+>>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
 
   const getFilteredPosts = () => {
     const postsToFilter = allPosts;
@@ -104,8 +137,13 @@ const Home = () => {
 
   return (
     <div className="flex h-screen w-screen bg-midnight text-cream font-nunito">
+<<<<<<< HEAD
       {/* Sidebar - width changes based on screen size */}
       <div className={`${isDesktop ? 'w-[320px]' : 'w-[0px]'} shrink-0`}>
+=======
+      {/* Sidebar */}
+      <div className="w-[320px]">
+>>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
         <SideBar />
       </div>
 
@@ -141,18 +179,25 @@ const Home = () => {
               onChange={handleSearchChange}
               onKeyDown={handleSearch}
             />
-            <div className="absolute right-3 top-2">🔽</div>
+            <div className="absolute right-5 top-3">
+                <Search size={18} />
+            </div>
           </div>
         </div>
 
         {/* Content and filters */}
-        <div className="flex flex-col lg:flex-row gap-6 overflow-auto">
+        <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
           {/* Posts Section */}
+<<<<<<< HEAD
           <div className="flex-1 flex flex-col gap-6 min-w-0">
             {isLoading ? (
               <div className="text-center py-10">Loading posts...</div>
             ) : filteredPosts.length > 0 ? (
               filteredPosts.map((post) => (
+=======
+        <div className="flex-1 flex flex-col gap-4 min-w-0 overflow-y-auto pr-1 scrollbar-hidden">
+            {mockPosts.map((post) => (
+>>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
                 <PostCard
                   key={post.id}
                   id={post.id}
@@ -171,11 +216,18 @@ const Home = () => {
           </div>
 
           {/* Sidebar Tags and Meter */}
-          <div className="w-full lg:w-[260px] flex flex-col gap-4">
-            <PostCounter currentPosts={2} maxPosts={5} />
+          <div className="w-full lg:w-[260px] flex-shrink-0">
+            <div className="sticky top-10 flex flex-col gap-4">
+              <PostCounter currentPosts={2} maxPosts={5} />
+              <Filter/>
 
+<<<<<<< HEAD
             <Filter onFilterChange={handleFilterChange} initialFilter={selectedTag} />
+=======
+            </div>
+>>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
           </div>
+
         </div>
       </div>
     </div>
