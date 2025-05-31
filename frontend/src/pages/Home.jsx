@@ -2,6 +2,7 @@ import React from 'react';
 import SideBar from '../components/SideBar';
 import PostCard from '../components/PostCard';
 import PostCounter from '../components/PostCounter';
+import Filter from '../components/Filter'; 
 
 const Home = () => {
 
@@ -84,19 +85,7 @@ const mockPosts = [
           <div className="w-full lg:w-[260px] flex flex-col gap-4">
             <PostCounter currentPosts={2} maxPosts={5} />
 
-            <div className="flex flex-wrap gap-2">
-              {[
-                "Home", "Love", "Friends", "Family", "School", "Work",
-                "Money", "Health", "Society", "Internet", "Loss", "Self", "Other"
-              ].map(tag => (
-                <button
-                  key={tag}
-                  className="bg-cream text-midnight font-semibold px-3 py-1 rounded-full text-sm hover:bg-opacity-80"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
+            <Filter></Filter>
           </div>
         </div>
       </div>
