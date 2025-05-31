@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Route, Routes, Link, useLocation } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { PostProvider } from './contexts/PostContext'
@@ -106,6 +107,29 @@ function App() {
       </PostProvider>
     </AuthProvider>
   )
+=======
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+// import Login from './pages/Login';
+// import PrivatePosts from './pages/PrivatePosts';
+// import PublicPosts from './pages/PublicPosts';
+// import SignUp from './pages/SignUp';
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/home" element={<Home />} />
+        {/* <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/posts">
+          <Route path="public" element={<PublicPosts />} />
+          <Route path="private" element={<PrivatePosts />} />
+        </Route> */}
+      </Routes>
+    </Router>
+  );
+>>>>>>> e6631944be4b1f97a112cb09fb2271ea8cf1b3d0
 }
 
-export default App
+export default App;

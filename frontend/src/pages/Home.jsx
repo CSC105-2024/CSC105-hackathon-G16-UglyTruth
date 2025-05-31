@@ -4,6 +4,8 @@ import PostList from '../components/PostList';
 import { useAuth } from '../contexts/AuthContext';
 import { usePost } from '../contexts/PostContext';
 import { Plus } from 'lucide-react';
+import SideBar from '../components/SideBar';
+
 
 const CATEGORIES = [
   'Love',
@@ -54,6 +56,9 @@ const HomePage = () => {
   }, [posts]);
   return (
     <div>
+        <div className='flex bg-color-midnight w-screen overflow-hidden'>
+      <SideBar />
+    </div>
       <section>
         <div className="flex flex-col gap-4 mb-6">
           <h2 className="text-2xl font-semibold text-gray-900">Explore Experiences</h2>
