@@ -1,6 +1,7 @@
 import React from 'react';
 import SideBar from '../components/SideBar';
 import PostCard from '../components/PostCard';
+import PostCounter from '../components/PostCounter';
 
 const Home = () => {
 
@@ -81,16 +82,7 @@ const mockPosts = [
 
           {/* Sidebar Tags and Meter */}
           <div className="w-full lg:w-[260px] flex flex-col gap-4">
-            <div className="bg-sage rounded-xl border border-cream p-4">
-              <h2 className="font-bold mb-2 text-xl">Post left Today</h2>
-              <div className="flex items-center gap-2 text-lg">
-                <span>0</span>
-                <div className="flex-1 h-3 bg-midnight rounded-full overflow-hidden">
-                  <div className="bg-cream h-full w-[40%]" />
-                </div>
-                <span>5</span>
-              </div>
-            </div>
+            <PostCounter currentPosts={2} maxPosts={5} />
 
             <div className="flex flex-wrap gap-2">
               {[
