@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import { UserController } from '../controllers/user.controller';
-import { PostController } from '../controllers/post.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { AIController } from '../controllers/ai.controller';
+import { UserController } from '../controllers/user.controller.ts';
+import { PostController } from '../controllers/post.controller.ts';
+import { authMiddleware } from '../middleware/auth.middleware.ts';
+import { AIController } from '../controllers/ai.controller.ts';
 import { setCookie } from 'hono/cookie';
 const api = new Hono();
 // Create protected routes for authenticated endpoints

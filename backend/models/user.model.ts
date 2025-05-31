@@ -21,17 +21,12 @@ export const UserModel = {
     });
   },
   
-  async findByUsername(username: string) {
-    return prisma.user.findUnique({
-      where: { username }
-    });
-  },
   
-  async exists(username: string, email: string) {
+  
+  async exists( email: string) {
     const user = await prisma.user.findFirst({
       where: {
         OR: [
-          { username },
           { email }
         ]
       }
@@ -40,14 +35,13 @@ export const UserModel = {
     return !!user;
   },
   
-  async create(email: string, username: string, password: string) {
+  async create(email: string, password: string) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
     const user = await prisma.user.create({
       data: {
         email,
-        username,
         password: hashedPassword
       }
     });
@@ -63,7 +57,6 @@ export const UserModel = {
   async search(query: string, limit: number = 10, currentUserId?: number) {
     let whereClause: any = {
       OR: [
-        { username: { contains: query } },
         { email: { contains: query } }
       ]
     };
@@ -82,7 +75,6 @@ export const UserModel = {
       take: limit,
       select: {
         id: true,
-        username: true,
         email: true
       }
     });
@@ -96,11 +88,15 @@ export const UserModel = {
     });
   },
 
-  async getUserByUsername(username: string) {
+  async getCurrentUser(userId: number) {
     return prisma.user.findUnique({
-      where: { username },
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+      }
     });
-  },
+  },  
 
   async getUsersById(ids: number[]) {
     return prisma.user.findMany({
@@ -112,10 +108,5 @@ export const UserModel = {
     });
   },
 
-  async updateAvatar(userId: number, avatarUrl: string) {
-    return prisma.user.update({
-      where: { id: userId },
-      data: { avatarUrl }
-    });
-  }
+  
 };

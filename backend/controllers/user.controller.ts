@@ -5,16 +5,12 @@ import { UserModel } from '../models/user.model.ts';
 import { z } from 'zod';
 
 interface RegisterRequest {
-  username: string;
   email: string;
   password: string;
-  name?: string;
-  bio?: string;
 }
 
 interface LoginRequest {
-  email?: string;
-  username?: string;
+  email: string;
   password: string;
 }
 
@@ -27,17 +23,15 @@ export class UserController {
   static async register(c: Context) {
     try {
       // Parse request body
-      let { username, email, password } = await c.req.json() as RegisterRequest;
-      
-      if (username) username = username.trim();
+      let { email, password } = await c.req.json() as RegisterRequest;
       if (email) email = email.trim();
       if (password) password = password.trim();
       
       // Validate required fields
-      if (!username || !email || !password) {
+      if (!email || !password) {
         return c.json({ 
           success: false, 
-          message: 'Username, email and password are required and cannot be empty' 
+          message: 'Email and password are required and cannot be empty' 
         }, 400); 
       }
       
@@ -51,16 +45,16 @@ export class UserController {
       }
 
       // Check if user exists
-      const userExists = await UserModel.exists(username, email);
+      const userExists = await UserModel.exists(email);
       if (userExists) {
         return c.json({ 
           success: false, 
-          message: 'User with this email or username already exists' 
+          message: 'User with this email already exists' 
         }, 400);
       }
       
       // Create user and handle authentication
-      const user = await UserModel.create(email, username, password);
+      const user = await UserModel.create(email, password);
       const token = JWT.generate(user.id);
       UserController.setAuthCookie(c, token);
       
@@ -82,23 +76,18 @@ export class UserController {
     try {      
       // Parse and validate request body
       const body = await c.req.json() as LoginRequest;
-      const { email: rawEmail, username: rawUsername, password } = body;
-      
-      const email = rawEmail?.trim();
-      const username = rawUsername?.trim();
+      const { email, password } = body;
       
       // Validate required fields
-      if (!password || (!email && !username)) {
+      if (!password || !email) {
         return c.json({ 
           success: false, 
-          message: 'Email/username and password are required' 
+          message: 'Email and password are required' 
         }, 400);
       }
       
-      // Find user by email or username
-      const user = email 
-        ? await UserModel.findByEmail(email)
-        : await UserModel.findByUsername(username!);
+      // Find user by email
+      const user = await UserModel.findByEmail(email.trim());
       
       // Check if user exists and password is valid
       if (!user || !await UserModel.validatePassword(user, password)) {
@@ -229,9 +218,8 @@ export class UserController {
 
   static async updateProfile(c: Context) {
     try {
+      // No profile fields to update, just return user
       const userId = c.get('userId');
-      const { avatarUrl } = await c.req.json();
-      
       if (!userId) {
         return c.json({ 
           success: false, 
@@ -239,12 +227,6 @@ export class UserController {
         }, 401);
       }
       
-      // Update the user's avatar URL
-      if (avatarUrl) {
-        await UserModel.updateAvatar(userId, avatarUrl);
-      }
-      
-      // Get the updated user
       const updatedUser = await UserModel.findById(userId);
       if (!updatedUser) {
         return c.json({ 
