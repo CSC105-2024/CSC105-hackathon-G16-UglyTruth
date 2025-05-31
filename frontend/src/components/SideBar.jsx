@@ -66,7 +66,7 @@ const SideBar = () => {
 
   const menuItems = [
     { text: 'Home', onClick: handleHome, path: '/home' },
-    { text: 'Create Post', onClick: handleCreatePost, path: '/create' },
+    { text: 'Create Post', onClick: handleCreatePost, path: '/create-post' },
     { text: 'My Private Posts', onClick: handleMyPrivatePosts, path: '/private-posts' },
     { text: 'My Public Posts', onClick: handleMyPublicPosts, path: '/public-posts' },
   ];
@@ -78,20 +78,20 @@ const SideBar = () => {
       )}
 
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-sage z-40 shadow-lg transition-transform duration-500 rounded-r-3xl flex flex-col items-center py-8 ${
+        className={`fixed top-0 left-0 h-full w-[320px] bg-sage z-40 shadow-lg transition-transform duration-500 rounded-r-3xl flex flex-col items-center py-8 ${
           isDesktop ? 'translate-x-0' : isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo Placeholder */}
         <div className="text-center mb-6">
           <div className="text-5xl font-bold font-pica text-cream leading-none">
-            <img src={Logo} alt="Ugly Truth Logo" className="w-24 h-24 mx-auto" />
+            <img src={Logo} alt="Ugly Truth Logo" className="w- h-26 mx-auto" />
           </div>
-          <div className="text-2xl font-pica text-cream mt-2">Ugly Truth</div>
+          <div className="text-4xl font-pica text-cream mt-2">Ugly Truth</div>
         </div>
 
         {/* Navigation Menu */}
-        <ul className="flex flex-col gap-4 w-4/6">
+        <ul className="flex flex-col gap-4 w-4/7">
           {menuItems.map((item, index) => (
             <MenuItem 
               key={index} 
@@ -106,7 +106,7 @@ const SideBar = () => {
         <div className="flex-grow" />
 
         {/* Logout Button */}
-        <div className="w-4/6 mb-4">
+        <div className="w-4/7 mb-4">
           <button
             onClick={handleLogout}
             className="w-full border border-cream text-cream font-pica py-2 rounded-xl hover:bg-cream hover:text-sage transition-colors"

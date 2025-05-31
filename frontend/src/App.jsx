@@ -7,6 +7,7 @@ import CreatePost from './pages/CreatePost';
 import SignUp from './pages/SignUp';
 import { AuthProvider } from './contexts/AuthContext';
 import { PostProvider } from './contexts/PostContext';
+import CreatePost from './pages/CreatePost';
 
 function App() {
   return (
@@ -18,10 +19,9 @@ function App() {
         <Route path="/create-post" element={<CreatePost />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
-        {/*<Route path="/posts">
-          <Route path="public" element={<PublicPosts />} />
-          <Route path="private" element={<PrivatePosts />} />
-        </Route> */}
+        <Route path="/public-posts" element={<PublicPosts />} />
+        <Route path="/private-posts" element={<PrivatePosts />} />
+        <Route path="/create-post" element={<CreatePost />} />
       </Routes>
     </Router>
     </PostProvider>
