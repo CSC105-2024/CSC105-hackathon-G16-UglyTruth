@@ -190,9 +190,7 @@ private static formatPost(post: any, currentUserId?: number) {
         return c.json({ success: false, message: 'Post not found' }, 404);
       }
 
-    //   if (post.authorId !== user.id) {
-    //     return c.json({ success: false, message: 'You can only update your own posts' }, 403);
-    //   }
+    
 
       const updatedPost = await prisma.post.update({
         where: { id: postId },
@@ -344,10 +342,7 @@ static async relatePost(c: Context) {
     }
   }
 
-  static async filterPostsByLocation(c: Context) {
-    // This feature is deprecated since location is not in the schema anymore
-    return c.json({ success: false, message: 'Filtering by location is not supported.' }, 400);
-  }
+  
 
   private static async getAllPostsInternal() {
     const posts = await prisma.post.findMany({

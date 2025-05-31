@@ -7,13 +7,8 @@ import Filter from '../components/Filter';
 
 const Home = () => {
   const { posts, fetchPosts, isLoading, searchPosts } = usePost();
-  const [selectedTag, setSelectedTag] = useState("Home");
+  const [selectedTag, setSelectedTag] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const presetTags = [
-    "Love", "Friends", "Family", "School", "Work",
-    "Money", "Health", "Society", "Internet", "Loss", "Self", "Other"
-  ];
 
   // Fetch posts on component mount
   useEffect(() => {
@@ -21,7 +16,7 @@ const Home = () => {
   }, [fetchPosts]);
 
   // Filter posts by selected tag
-  const filteredPosts = selectedTag === "Home" 
+  const filteredPosts = !selectedTag 
     ? posts 
     : posts.filter(post => post.category === selectedTag);
 
@@ -36,8 +31,8 @@ const Home = () => {
     }
   };
 
-  // Handle tag selection
-  const handleTagClick = (tag) => {
+  // Handle filter change from Filter component
+  const handleFilterChange = (tag) => {
     setSelectedTag(tag);
     setSearchQuery("");
   };
@@ -96,7 +91,7 @@ const Home = () => {
           <div className="w-full lg:w-[260px] flex flex-col gap-4">
             <PostCounter currentPosts={2} maxPosts={5} />
 
-            <Filter></Filter>
+            <Filter onFilterChange={handleFilterChange} initialFilter={selectedTag} />
           </div>
         </div>
       </div>
