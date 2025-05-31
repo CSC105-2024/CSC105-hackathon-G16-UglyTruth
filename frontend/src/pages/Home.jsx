@@ -3,6 +3,7 @@ import SideBar from '../components/SideBar';
 import PostCard from '../components/PostCard';
 import PostCounter from '../components/PostCounter';
 import { usePost } from '../contexts/PostContext';
+import Filter from '../components/Filter'; 
 
 const Home = () => {
   const { posts, fetchPosts, isLoading, searchPosts } = usePost();
@@ -95,21 +96,7 @@ const Home = () => {
           <div className="w-full lg:w-[260px] flex flex-col gap-4">
             <PostCounter currentPosts={2} maxPosts={5} />
 
-            <div className="flex flex-wrap gap-2">
-              {[
-                "Home", ...presetTags
-              ].map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => handleTagClick(tag)}
-                  className={`bg-cream text-midnight font-semibold px-3 py-1 rounded-full text-sm hover:bg-opacity-80 ${
-                    selectedTag === tag ? 'bg-opacity-100' : 'bg-opacity-70'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
+            <Filter></Filter>
           </div>
         </div>
       </div>
