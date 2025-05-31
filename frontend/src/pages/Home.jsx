@@ -3,6 +3,8 @@ import SideBar from '../components/SideBar';
 import PostCard from '../components/PostCard';
 import PostCounter from '../components/PostCounter';
 import Filter from '../components/Filter'; 
+import { Search } from 'lucide-react';
+import SideBarMobile from '../components/SideBarMobile';
 
 const Home = () => {
 
@@ -10,6 +12,7 @@ const presetTags = [
   "Love", "Friends", "Family", "School", "Work",
   "Money", "Health", "Society", "Internet", "Loss", "Self", "Other"
 ];
+
 
 const mockPosts = [
   {
@@ -43,7 +46,7 @@ const mockPosts = [
   return (
     <div className="flex h-screen w-screen bg-midnight text-cream font-nunito">
       {/* Sidebar */}
-      <div className="w-[320px] shrink-0">
+      <div className="w-[320px]">
         <SideBar />
       </div>
 
@@ -58,14 +61,16 @@ const mockPosts = [
               placeholder="Search post ..."
               className="w-full px-4 py-2 rounded-full bg-midnight border border-cream text-cream placeholder-cream focus:outline-none"
             />
-            <div className="absolute right-3 top-2">🔽</div>
+            <div className="absolute right-5 top-3">
+                <Search size={18} />
+            </div>
           </div>
         </div>
 
         {/* Content and filters */}
-        <div className="flex flex-col lg:flex-row gap-6 overflow-auto">
+        <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
           {/* Posts Section */}
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
+        <div className="flex-1 flex flex-col gap-4 min-w-0 overflow-y-auto pr-1 scrollbar-hidden">
             {mockPosts.map((post) => (
                 <PostCard
                     key={post.id}
@@ -82,11 +87,14 @@ const mockPosts = [
 
 
           {/* Sidebar Tags and Meter */}
-          <div className="w-full lg:w-[260px] flex flex-col gap-4">
-            <PostCounter currentPosts={2} maxPosts={5} />
+          <div className="w-full lg:w-[260px] flex-shrink-0">
+            <div className="sticky top-10 flex flex-col gap-4">
+              <PostCounter currentPosts={2} maxPosts={5} />
+              <Filter/>
 
-            <Filter></Filter>
+            </div>
           </div>
+
         </div>
       </div>
     </div>
