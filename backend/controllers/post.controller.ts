@@ -33,7 +33,6 @@ private static formatPost(post: any, currentUserId?: number) {
       let isAudio = false;
       let transcript = '';
 
-      // Check if request is multipart (audio upload) or JSON (text)
       const contentType = c.req.header('content-type') || '';
       if (contentType.includes('multipart/form-data')) {
         // Handle audio upload
@@ -73,8 +72,6 @@ private static formatPost(post: any, currentUserId?: number) {
         if (!title || !description) {
           return c.json({ success: false, message: 'Missing required fields' }, 400);
         }
-        // Use AI to get category from text
-        // Import processTranscriptWithChatGPT dynamically to avoid ESM/CJS issues
         const aiConfig = await import('../config/ai_config.mjs');
         const cat = await aiConfig.processTranscriptWithChatGPT(`${title} ${description}`);
         category = (cat || '').trim();

@@ -1,37 +1,28 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { HeartCrack, Eye, TriangleAlert } from 'lucide-react';
+import { usePost } from '../contexts/PostContext';
 
-
-
-const PostCard = ({ title, tag, warning, content, likes, views }) => {
+// Update the props to include id and relatableCount
+const PostCard = ({ id, title, tag, warning, content, relatableCount, views, userRelated }) => {
   const [expanded, setExpanded] = useState(false);
-
+  const { toggleRelatable } = usePost();
   const previewLimit = 100;
   const safeContent = content || '';
-
+  
+  // Prevent event propagation to avoid expanding the card when clicking the button
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    toggleRelatable(id);
+  };
+  
   const truncatedContent = safeContent.length > previewLimit
     ? safeContent.slice(0, previewLimit) + '...'
     : safeContent;
 
-PostCard.propTypes = {
-  title: PropTypes.string.isRequired,
-  tag: PropTypes.string.isRequired,
-  warning: PropTypes.bool,
-  content: PropTypes.string.isRequired,
-  likes: PropTypes.number,
-  views: PropTypes.number,
-};
-
-PostCard.defaultProps = {
-  warning: false,
-  likes: 0,
-  views: 0,
-};
-
   return (
     <div
-      className=" bg-sage rounded-xl p-4 border  border-cream cursor-pointer transition-all duration-300"
+      className="bg-sage rounded-xl p-4 border border-cream cursor-pointer transition-all duration-300"
       onClick={() => setExpanded(!expanded)}
     >
       <h3 className="text-lg font-bold text-linen mb-2">{title}</h3>
@@ -53,17 +44,40 @@ PostCard.defaultProps = {
       <div className="flex items-center justify-between text-sm text-linen font-semibold">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1"><Eye size={16} /> {views}</span>
-          <span className="flex items-center gap-1"><HeartCrack size={16}/> {likes}</span>
+          <span className="flex items-center gap-1"><HeartCrack size={16}/> {relatableCount}</span>
         </div>
 
         {expanded && (
-          <button className="bg-linen text-midnight font-pica px-3 py-1 rounded-xl cursor-pointer transition-colors">
-            Relatable
+          <button 
+            onClick={handleToggle} 
+            className={`bg-linen text-midnight font-pica px-3 py-1 rounded-xl cursor-pointer transition-colors ${
+              userRelated ? 'bg-cream text-midnight' : 'bg-linen text-midnight'
+            }`}
+          >
+            {userRelated ? 'Related' : 'Relatable'}
           </button>
         )}
       </div>
     </div>
   );
+};
+
+PostCard.propTypes = {
+  id: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  tag: PropTypes.string.isRequired,
+  warning: PropTypes.bool,
+  content: PropTypes.string.isRequired,
+  relatableCount: PropTypes.number,
+  views: PropTypes.number,
+  userRelated: PropTypes.bool
+};
+
+PostCard.defaultProps = {
+  warning: false,
+  relatableCount: 0,
+  views: 0,
+  userRelated: false
 };
 
 export default PostCard;

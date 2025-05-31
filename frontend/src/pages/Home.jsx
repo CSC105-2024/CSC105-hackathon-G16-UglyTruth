@@ -1,43 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import SideBar from '../components/SideBar';
 import PostCard from '../components/PostCard';
 import PostCounter from '../components/PostCounter';
+import { usePost } from '../contexts/PostContext';
 
 const Home = () => {
+  const { posts, fetchPosts, isLoading, searchPosts } = usePost();
+  const [selectedTag, setSelectedTag] = useState("Home");
+  const [searchQuery, setSearchQuery] = useState("");
 
-const presetTags = [
-  "Love", "Friends", "Family", "School", "Work",
-  "Money", "Health", "Society", "Internet", "Loss", "Self", "Other"
-];
+  const presetTags = [
+    "Love", "Friends", "Family", "School", "Work",
+    "Money", "Health", "Society", "Internet", "Loss", "Self", "Other"
+  ];
 
-const mockPosts = [
-  {
-    id: 1,
-    title: "Overwhelmed by School",
-    content: "I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. ",
-    tag: presetTags[3], // "School"
-    warning: true,
-    views: 42,
-    likes: 15,
-  },
-  {
-    id: 2,
-    title: "Simple Joys with Friends",
-    content: "Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count!",
-    tag: presetTags[1], // "Friends"
-    views: 58,
-    likes: 22,
-  },
-  {
-    id: 3,
-    title: "Work Stress Again",
-    content: "Work stress is piling up again. Just needed to let it out anonymously. Work stress is piling up again. Just needed to let it out anonymously. Work stress is piling up again. Just needed to let it out anonymously. Work stress is piling up again. Just needed to let it out anonymously.",
-    tag: presetTags[4], // "Work"
-    views: 30,
-    likes: 9,
-  },
-];
+  // Fetch posts on component mount
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
+  // Filter posts by selected tag
+  const filteredPosts = selectedTag === "Home" 
+    ? posts 
+    : posts.filter(post => post.category === selectedTag);
+
+  // Handle search submit
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      if (searchQuery.trim()) {
+        searchPosts(searchQuery);
+      } else {
+        fetchPosts();
+      }
+    }
+  };
+
+  // Handle tag selection
+  const handleTagClick = (tag) => {
+    setSelectedTag(tag);
+    setSearchQuery("");
+  };
 
   return (
     <div className="flex h-screen w-screen bg-midnight text-cream font-nunito">
@@ -56,6 +58,9 @@ const mockPosts = [
               type="text"
               placeholder="Search post ..."
               className="w-full px-4 py-2 rounded-full bg-midnight border border-cream text-cream placeholder-cream focus:outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearch}
             />
             <div className="absolute right-3 top-2">🔽</div>
           </div>
@@ -64,21 +69,27 @@ const mockPosts = [
         {/* Content and filters */}
         <div className="flex flex-col lg:flex-row gap-6 overflow-auto">
           {/* Posts Section */}
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
-            {mockPosts.map((post) => (
+          <div className="flex-1 flex flex-col gap-6 min-w-0">
+            {isLoading ? (
+              <div className="text-center py-10">Loading posts...</div>
+            ) : filteredPosts.length > 0 ? (
+              filteredPosts.map((post) => (
                 <PostCard
-                    key={post.id}
-                    title={post.title}
-                    tag={post.tag}
-                    warning={post.warning}
-                    content={post.content}
-                    likes={post.likes}
-                    views={post.views}
+                  key={post.id}
+                  id={post.id}
+                  title={post.title}
+                  tag={post.category}
+                  warning={false}
+                  content={post.description}
+                  relatableCount={post.relatableCount || 0}
+                  views={0}
+                  userRelated={post.userRelated || false}
                 />
-            ))}
-        </div>
-
-
+              ))
+            ) : (
+              <div className="text-center py-10">No posts found</div>
+            )}
+          </div>
 
           {/* Sidebar Tags and Meter */}
           <div className="w-full lg:w-[260px] flex flex-col gap-4">
@@ -86,12 +97,14 @@ const mockPosts = [
 
             <div className="flex flex-wrap gap-2">
               {[
-                "Home", "Love", "Friends", "Family", "School", "Work",
-                "Money", "Health", "Society", "Internet", "Loss", "Self", "Other"
+                "Home", ...presetTags
               ].map(tag => (
                 <button
                   key={tag}
-                  className="bg-cream text-midnight font-semibold px-3 py-1 rounded-full text-sm hover:bg-opacity-80"
+                  onClick={() => handleTagClick(tag)}
+                  className={`bg-cream text-midnight font-semibold px-3 py-1 rounded-full text-sm hover:bg-opacity-80 ${
+                    selectedTag === tag ? 'bg-opacity-100' : 'bg-opacity-70'
+                  }`}
                 >
                   {tag}
                 </button>

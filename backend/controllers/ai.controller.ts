@@ -38,7 +38,6 @@ export class AIController {
       console.log(`Categorization result: "${result.response}"`);
       console.log(`=================================`);
       
-      // Clean up temp file
       fs.unlinkSync(tempFilePath);
       console.log(`Temporary file deleted: ${tempFilePath}`);
       

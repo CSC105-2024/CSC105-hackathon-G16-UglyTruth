@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { Axios } from '../axiosinstance'; // Use correct casing for import
+import { Axios } from '../axiosinstance';
 
 // Create the context
 const PostContext = createContext();
@@ -73,19 +73,15 @@ export const PostProvider = ({ children }) => {
       
       let response;
       if (isAudioUpload) {
-        // Handle audio upload (FormData)
         if (!(postData instanceof FormData)) {
           throw new Error('Audio upload requires FormData');
         }
-        // The server will process the audio, extract transcript and determine category
         response = await Axios.post('/posts', postData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
       } else {
-        // Handle regular JSON post
-        // The server will use the title and description to determine the category
         const requestData = {
           title: postData.title,
           description: postData.description
@@ -98,7 +94,6 @@ export const PostProvider = ({ children }) => {
         throw new Error(data.message || 'Failed to create post');
       }
       
-      // Add the new post to the state and refresh posts
       setPosts(prevPosts => [data.post, ...prevPosts]);
       setIsLoading(false);
       return data.post;
@@ -160,28 +155,31 @@ export const PostProvider = ({ children }) => {
   }, [user]);
 
   // Relatable logic (toggle)
-  const toggleRelatable = useCallback(async (id) => {
-    setIsLoading(true);
-    setError(null);
+  const toggleRelatable = async (id) => {
     try {
       if (!user) {
         throw new Error('You must be logged in to mark relatable');
       }
+      
       const { data } = await Axios.post(`/posts/${id}/relatable`);
+      
       if (!data.success) {
         throw new Error(data.message || 'Failed to mark relatable');
       }
-      const updatedPost = data.post;
-      setPosts(prevPosts => prevPosts.map(p => p.id === id ? updatedPost : p));
-      if (currentPost?.id === id) {
-        setCurrentPost(updatedPost);
-      }
-      setIsLoading(false);
+      
+      setPosts(prevPosts => prevPosts.map(post => 
+        post.id === id ? {
+          ...post,
+          relatableCount: data.data.relatableCount,
+          userRelated: !post.userRelated
+        } : post
+      ));
+      
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to mark relatable');
-      setIsLoading(false);
+      console.error('Error toggling relatable:', error);
     }
-  }, [user, currentPost]);
+  };
+
   // Search posts function
   const searchPosts = useCallback(async (query) => {
     setIsLoading(true);
