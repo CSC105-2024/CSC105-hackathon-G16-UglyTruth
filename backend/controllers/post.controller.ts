@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 import { PrismaClient } from '../src/generated/prisma/index.js';
-
+import { processAudioWithAI } from '../config/ai_config.mjs';
 const prisma = new PrismaClient();
 
 export class PostController {
@@ -10,16 +10,15 @@ private static formatPost(post: any, currentUserId?: number) {
     id: post.id.toString(),
     title: post.title,
     description: post.description,
-    
+    category: post.category,
     author: {
       id: post.author.id.toString(),
       email: post.author.email,
       createdAt: post.author.createdAt.toISOString()
     },
-    upvotes: post.upvotes,
-    userVote: currentUserId && post.votes ? 
-      post.votes.find((vote: any) => vote.userId === currentUserId)?.type?.toLowerCase() || null 
-      : null,
+    relatableCount: post.relatableCount ?? post.relatables?.length ?? 0,
+    userRelated: currentUserId && post.relatables ? 
+      post.relatables.some((rel: any) => rel.userId === currentUserId) : false,
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString()
   };
@@ -27,26 +26,73 @@ private static formatPost(post: any, currentUserId?: number) {
 
   static async createPost(c: Context) {
     try {
-      const { title, description } = await c.req.json();
+      let title = '';
+      let description = '';
+      let category = '';
       const user = c.get('user');
+      let isAudio = false;
+      let transcript = '';
 
-      if (!title || !description) {
-        return c.json({ success: false, message: 'Missing required fields' }, 400);
+      // Check if request is multipart (audio upload) or JSON (text)
+      const contentType = c.req.header('content-type') || '';
+      if (contentType.includes('multipart/form-data')) {
+        // Handle audio upload
+        const form = await c.req.formData();
+        const audioFile = form.get('audio');
+        const titleEntry = form.get('title');
+        if (typeof titleEntry === 'string') {
+          title = titleEntry;
+        } else {
+          title = '';
+        }
+        if (!audioFile || typeof audioFile === 'string') {
+          return c.json({ success: false, message: 'No audio file uploaded' }, 400);
+        }
+        // Save audio to temp file
+        const os = await import('os');
+        const path = await import('path');
+        const fs = await import('fs');
+        const fileName = audioFile.name || `audio_${Date.now()}.mp3`;
+        const tempDir = os.default.tmpdir();
+        const tempFilePath = path.default.join(tempDir, `upload_${Date.now()}.${fileName.split('.').pop()}`);
+        const fileBuffer = Buffer.from(await audioFile.arrayBuffer());
+        fs.default.writeFileSync(tempFilePath, fileBuffer);
+        // Process audio: get transcript and category
+        const aiResult = await processAudioWithAI(tempFilePath);
+        transcript = aiResult.transcript;
+        category = (aiResult.response || '').trim();
+        description = transcript;
+        // Clean up temp file
+        fs.default.unlinkSync(tempFilePath);
+        isAudio = true;
+      } else {
+        // Handle JSON (text)
+        const body = await c.req.json();
+        title = body.title;
+        description = body.description;
+        if (!title || !description) {
+          return c.json({ success: false, message: 'Missing required fields' }, 400);
+        }
+        // Use AI to get category from text
+        // Import processTranscriptWithChatGPT dynamically to avoid ESM/CJS issues
+        const aiConfig = await import('../config/ai_config.mjs');
+        const cat = await aiConfig.processTranscriptWithChatGPT(`${title} ${description}`);
+        category = (cat || '').trim();
       }
-      
+
+      // Save post with determined category
       const post = await prisma.post.create({
         data: {
           title,
           description,
+          category,
           authorId: user.id
         },
         include: {
           author: true
         }
       });
-
       const formattedPost = PostController.formatPost(post);
-
       return c.json({ success: true, post: formattedPost }, 201);
     } catch (error) {
       console.error('Error creating post:', error);
@@ -203,93 +249,67 @@ private static formatPost(post: any, currentUserId?: number) {
     }
   }
 
-static async votePost(c: Context) {
+static async relatePost(c: Context) {
   try {
     const postId = parseInt(c.req.param('id'));
-    const { voteType } = await c.req.json();
-    const user = c.get('user'); // Get the authenticated user
+    const user = c.get('user');
 
-    // Validate inputs
-    if (isNaN(postId) || voteType !== 'up') {
-      return c.json({ 
-        success: false, 
-        message: isNaN(postId) ? 'Invalid post ID' : 'Invalid vote type' 
-      }, 400);
+    if (isNaN(postId)) {
+      return c.json({ success: false, message: 'Invalid post ID' }, 400);
     }
-
-    // Check if user is authenticated
     if (!user) {
       return c.json({ success: false, message: 'Authentication required' }, 401);
     }
 
-    // Check if post exists
     const post = await prisma.post.findUnique({
-      where: { id: postId }
+      where: { id: postId },
+      include: { relatables: true }
     });
-
     if (!post) {
       return c.json({ success: false, message: 'Post not found' }, 404);
     }
 
-    // Check if user has already voted on this post
-    const existingVote = await prisma.vote.findUnique({
-      where: {
-        userId_postId: {
-          userId: user.id,
-          postId: postId
-        }
-      }
+    const existingRelatable = await prisma.relatable.findUnique({
+      where: { userId_postId: { userId: user.id, postId } }
     });
 
-    if (existingVote) {
-      // User clicked same vote type - remove the vote (toggle off)
-      await prisma.vote.delete({
-        where: { id: existingVote.id }
+    let action: 'added' | 'removed';
+    if (existingRelatable) {
+      // Remove relatable (toggle off)
+      await prisma.relatable.delete({
+        where: { id: existingRelatable.id }
       });
-
-      // Update post counters (decrement)
       await prisma.post.update({
         where: { id: postId },
-        data: {
-          upvotes: { decrement: 1 }
-        }
+        data: { relatableCount: { decrement: 1 } }
       });
+      action = 'removed';
     } else {
-      // User hasn't voted yet - create new vote
-      await prisma.vote.create({
-        data: {
-          type: 'UP',
-          userId: user.id,
-          postId: postId
-        }
+      // Add relatable
+      await prisma.relatable.create({
+        data: { userId: user.id, postId }
       });
-
-      // Update post counters (increment)
       await prisma.post.update({
         where: { id: postId },
-        data: {
-          upvotes: { increment: 1 }
-        }
+        data: { relatableCount: { increment: 1 } }
       });
+      action = 'added';
     }
 
-    // Fetch updated post with current vote counts
     const updatedPost = await prisma.post.findUnique({
       where: { id: postId },
-      include: { author: true }
+      include: { author: true, relatables: true }
     });
-
     if (!updatedPost) {
       return c.json({ success: false, message: 'Post not found' }, 404);
     }
-
-    // Format the response
     return c.json({
       success: true,
-      data: PostController.formatPost(updatedPost)
+      action,
+      data: PostController.formatPost(updatedPost, user.id)
     });
   } catch (error) {
-    console.error('Error voting on post:', error);
+    console.error('Error relating post:', error);
     return c.json({ success: false, message: 'Internal server error' }, 500);
   }
 }

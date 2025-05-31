@@ -42,7 +42,7 @@ protectedRoutes.put('/users/me', UserController.updateProfile);
 protectedRoutes.post('/posts', PostController.createPost);
 protectedRoutes.put('/posts/:id', PostController.updatePost);
 protectedRoutes.delete('/posts/:id', PostController.deletePost);
-protectedRoutes.post('/posts/:id/vote', PostController.votePost);
+protectedRoutes.post('/posts/:id/relate', PostController.relatePost);
 
 
 // Mount protected routes to the main API router

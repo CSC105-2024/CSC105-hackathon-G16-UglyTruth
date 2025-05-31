@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import RegisterForm from '../components/auth/RegisterForm';
+import LoginForm from '../components/auth/LoginForm';
 import { useAuth } from '../contexts/AuthContext';
 
-const SignUp = () => {
+const Login = () => {
   const { isAuthenticated } = useAuth();
     useEffect(() => {
-    document.title = 'Create Account - UglyTruth';
+    document.title = 'Sign In - UglyTruth';
   }, []);
   
   if (isAuthenticated) {
@@ -15,9 +15,9 @@ const SignUp = () => {
   
   return (
     <div className="py-10">
-      <RegisterForm />
+      <LoginForm />
     </div>
   );
 };
 
-export default SignUp;
+export default Login;
