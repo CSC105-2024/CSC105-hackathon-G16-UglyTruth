@@ -4,12 +4,14 @@ import Login from './pages/Login';
 // import PrivatePosts from './pages/PrivatePosts';
 // import PublicPosts from './pages/PublicPosts';
 import SignUp from './pages/SignUp';
+import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
   return (
+    <AuthProvider>
     <Router>
       <Routes>
-        <Route path="/home" element={<Home />} />
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         {/*<Route path="/posts">
@@ -18,6 +20,7 @@ function App() {
         </Route> */}
       </Routes>
     </Router>
+    </AuthProvider>
   );
 }
 
