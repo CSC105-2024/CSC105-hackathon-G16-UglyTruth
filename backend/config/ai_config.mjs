@@ -13,7 +13,7 @@ async function transcribeAudio(audioFilePath) {
     console.log(`Transcribing audio file: ${audioFilePath}`);
     console.log(`Using Whisper model: whisper-1`);
     
-    // Get file stats for debugging
+    // THis is only here for debugging purposes
     const stats = fs.statSync(audioFilePath);
     console.log(`File size: ${stats.size} bytes`);
     console.log(`File created at: ${stats.birthtime}`);
@@ -28,7 +28,6 @@ async function transcribeAudio(audioFilePath) {
       model: "whisper-1",
     });
     
-    // End time for performance tracking
     const endTime = new Date();
     const elapsedMs = endTime - startTime;
     console.log(`Transcription completed successfully in ${elapsedMs}ms`);
@@ -48,7 +47,6 @@ async function transcribeAudio(audioFilePath) {
   }
 }
 
-// Function to send transcript to ChatGPT and get a response
 async function processTranscriptWithChatGPT(transcript) {
   try {
     console.log("===== SENDING TRANSCRIPT TO CHATGPT =====");
