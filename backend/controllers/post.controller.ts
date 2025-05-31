@@ -17,6 +17,7 @@ private static formatPost(post: any, currentUserId?: number) {
       createdAt: post.author.createdAt.toISOString()
     },
     relatableCount: post.relatableCount ?? post.relatables?.length ?? 0,
+    views: post.views ?? 0, // Make sure views is included
     userRelated: currentUserId && post.relatables ? 
       post.relatables.some((rel: any) => rel.userId === currentUserId) : false,
     createdAt: post.createdAt.toISOString(),
@@ -342,7 +343,36 @@ static async relatePost(c: Context) {
     }
   }
 
-  
+  static async incrementViewCount(c: Context) {
+    try {
+      const postId = parseInt(c.req.param('id'));
+      
+      if (isNaN(postId)) {
+        return c.json({ success: false, message: 'Invalid post ID' }, 400);
+      }
+
+      const updatedPost = await prisma.post.update({
+        where: { id: postId },
+        data: { views: { increment: 1 } },
+        include: { author: true, relatables: true }
+      });
+
+      if (!updatedPost) {
+        return c.json({ success: false, message: 'Post not found' }, 404);
+      }
+
+      const user = c.get('user');
+      const userId = user ? user.id : undefined;
+      
+      return c.json({
+        success: true,
+        data: PostController.formatPost(updatedPost, userId)
+      });
+    } catch (error) {
+      console.error('Error incrementing view count:', error);
+      return c.json({ success: false, message: 'Internal server error' }, 500);
+    }
+  }
 
   private static async getAllPostsInternal() {
     const posts = await prisma.post.findMany({

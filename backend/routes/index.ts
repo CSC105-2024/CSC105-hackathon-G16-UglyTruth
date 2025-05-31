@@ -43,7 +43,7 @@ protectedRoutes.post('/posts', PostController.createPost);
 protectedRoutes.put('/posts/:id', PostController.updatePost);
 protectedRoutes.delete('/posts/:id', PostController.deletePost);
 protectedRoutes.post('/posts/:id/relatable', PostController.relatePost);
-
+protectedRoutes.get('/posts/:id/view', PostController.incrementViewCount);
 
 // Mount protected routes to the main API router
 api.route('', protectedRoutes);

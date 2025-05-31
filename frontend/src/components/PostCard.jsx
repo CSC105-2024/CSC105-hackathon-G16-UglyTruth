@@ -1,19 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { HeartCrack, Eye, TriangleAlert } from 'lucide-react';
 import { usePost } from '../contexts/PostContext';
 
 // Update the props to include id and relatableCount
-const PostCard = ({ id, title, tag, warning, content, relatableCount, views, userRelated }) => {
+const PostCard = ({ id, title, tag, warning, content, relatableCount, views: initialViews, userRelated }) => {
   const [expanded, setExpanded] = useState(false);
-  const { toggleRelatable } = usePost();
+  const [viewCount, setViewCount] = useState(initialViews || 0);
+  const { toggleRelatable, incrementViewCount } = usePost();
   const previewLimit = 100;
   const safeContent = content || '';
+  
+  // Update local view count when prop changes
+  useEffect(() => {
+    setViewCount(initialViews || 0);
+  }, [initialViews]);
   
   // Prevent event propagation to avoid expanding the card when clicking the button
   const handleToggle = (e) => {
     e.stopPropagation();
     toggleRelatable(id);
+  };
+
+  const handleExpand = () => {
+    // Only increment view when expanding, not when collapsing
+    if (!expanded) {
+      incrementViewCount(id);
+      setViewCount(prev => prev + 1);
+    }
+    setExpanded(!expanded);
   };
   
   const truncatedContent = safeContent.length > previewLimit
@@ -23,7 +38,7 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views, use
   return (
     <div
       className="bg-sage rounded-xl p-4 border border-cream cursor-pointer transition-all duration-300"
-      onClick={() => setExpanded(!expanded)}
+      onClick={handleExpand}
     >
       <h3 className="text-lg font-bold text-linen mb-2">{title}</h3>
       
@@ -43,7 +58,7 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views, use
 
       <div className="flex items-center justify-between text-sm text-linen font-semibold">
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1"><Eye size={16} /> {views}</span>
+          <span className="flex items-center gap-1"><Eye size={16} /> {viewCount}</span>
           <span className="flex items-center gap-1"><HeartCrack size={16}/> {relatableCount}</span>
         </div>
 

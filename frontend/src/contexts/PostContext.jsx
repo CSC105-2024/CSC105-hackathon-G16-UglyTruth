@@ -198,6 +198,31 @@ export const PostProvider = ({ children }) => {
     }
   }, []);
 
+  // Function to increment view count
+  const incrementViewCount = async (id) => {
+    try {
+      if (!id) return;
+      
+      const { data } = await Axios.post(`/posts/${id}/view`);
+      
+      if (!data.success) {
+        console.error(data.message || 'Failed to increment view count');
+        return;
+      }
+      
+      // Update posts state with the new view count
+      setPosts(prevPosts => prevPosts.map(post => 
+        post.id === id ? {
+          ...post,
+          views: (post.views || 0) + 1
+        } : post
+      ));
+      
+    } catch (error) {
+      console.error('Error incrementing view count:', error);
+    }
+  };
+
   const value = {
     posts,
     userPosts,
@@ -206,12 +231,13 @@ export const PostProvider = ({ children }) => {
     error,
     fetchPosts,
     fetchUserPosts,
-    fetchPostById,
+    fetchPostById, 
     createPost,
     updatePost,
     deletePost,
     toggleRelatable,
     searchPosts,
+    incrementViewCount // Add this to the context value
   };
 
   return <PostContext.Provider value={value}>{children}</PostContext.Provider>;

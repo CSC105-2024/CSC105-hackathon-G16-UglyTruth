@@ -9,11 +9,17 @@ const Filter = ({ onFilterChange, initialFilter = null }) => {
   ];
 
   const handleTagClick = (tag) => {
-    const newTag = selectedTag === tag ? null : tag === "All" ? null : tag;
+    if (tag === "Home") {
+      setSelectedTag(null);
+      if (onFilterChange) {
+        onFilterChange(null);
+      }
+      return;
+    }
     
+    const newTag = selectedTag === tag ? null : tag;
     setSelectedTag(newTag);
     
-    // Call parent callback if provided
     if (onFilterChange) {
       onFilterChange(newTag);
     }
@@ -46,7 +52,7 @@ const Filter = ({ onFilterChange, initialFilter = null }) => {
             key={tag}
             onClick={() => handleTagClick(tag)}
             className={`px-3 py-1 rounded-full text-sm font-semibold transition-all duration-200 ${
-              selectedTag === tag || (tag === "All" && !selectedTag)
+              (tag === "Home" && !selectedTag) || selectedTag === tag
                 ? 'bg-midnight text-cream shadow-md scale-105'
                 : 'bg-cream text-midnight hover:bg-opacity-80 hover:shadow-sm'
             }`}
