@@ -357,8 +357,4 @@ const CreatePost = () => {
   );
 };
 
-<<<<<<< HEAD
 export default CreatePost;
-=======
-export default CreatePost;
->>>>>>> 91a5adba86ffa9220e8a52eb449fa1fad2741a0a
