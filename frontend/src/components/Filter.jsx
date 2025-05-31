@@ -62,7 +62,7 @@ const Filter = ({ onFilterChange, initialFilter = null, onSortChange }) => {
             key={tag}
             onClick={() => handleTagClick(tag)}
             className={`px-3 py-1 rounded-full text-sm font-semibold transition-all duration-200 ${
-              selectedTag === tag || (tag === "All" && !selectedTag)
+              (tag === "Home" && !selectedTag) || selectedTag === tag
                 ? 'bg-midnight text-cream shadow-md scale-105'
                 : 'bg-cream text-midnight hover:bg-opacity-80 hover:shadow-sm'
             }`}

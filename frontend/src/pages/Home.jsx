@@ -4,7 +4,7 @@ import PostCard from '../components/PostCard';
 import PostCounter from '../components/PostCounter';
 import { usePost } from '../contexts/PostContext';
 import Filter from '../components/Filter'; 
-import { Search } from 'lucide-react';
+import { Search, Funnel  } from 'lucide-react';
 import SideBarMobile from '../components/SideBarMobile';
 
 const Home = () => {
@@ -15,16 +15,43 @@ const Home = () => {
   const [allPosts, setAllPosts] = useState([]);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   // Add this effect to detect screen size
   useEffect(() => {
     const handleResize = () => {
       setIsDesktop(window.innerWidth >= 1024);
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false); // Close mobile sidebar when switching to desktop
+      }
     };
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Add click outside handler for mobile sidebar
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Only run this on mobile when sidebar is open
+      if (!isDesktop && sidebarOpen) {
+        // Check if the click is outside the sidebar
+        const sidebar = document.getElementById("mobile-sidebar");
+        if (sidebar && !sidebar.contains(event.target)) {
+          setSidebarOpen(false);
+        }
+      }
+    };
+
+    // Add event listener when sidebar is open
+    if (sidebarOpen && !isDesktop) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [sidebarOpen, isDesktop]);
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -33,42 +60,11 @@ const Home = () => {
     loadPosts();
   }, [fetchPosts]);
 
-<<<<<<< HEAD
   useEffect(() => {
     if (posts.length > 0) {
       setAllPosts(posts);
     }
   }, [posts]);
-=======
-
-const mockPosts = [
-  {
-    id: 1,
-    title: "Overwhelmed by School",
-    content: "I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. I’m feeling overwhelmed with school. Too much to do, too little time. I just need a break. ",
-    tag: presetTags[3], // "School"
-    warning: true,
-    views: 42,
-    likes: 15,
-  },
-  {
-    id: 2,
-    title: "Simple Joys with Friends",
-    content: "Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count! Had an amazing day with friends—it's the little things that count!",
-    tag: presetTags[1], // "Friends"
-    views: 58,
-    likes: 22,
-  },
-  {
-    id: 3,
-    title: "Work Stress Again",
-    content: "Work stress is piling up again. Just needed to let it out anonymously. Work stress is piling up again. Just needed to let it out anonymously. Work stress is piling up again. Just needed to let it out anonymously. Work stress is piling up again. Just needed to let it out anonymously.",
-    tag: presetTags[4], // "Work"
-    views: 30,
-    likes: 9,
-  },
-];
->>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
 
   const getFilteredPosts = () => {
     const postsToFilter = allPosts;
@@ -130,6 +126,9 @@ const mockPosts = [
       setTitle(tag || "HOME");
     }
   };
+  const toggleFilter = () => {
+      setIsFilterOpen(!isFilterOpen);
+  }
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -137,25 +136,37 @@ const mockPosts = [
 
   return (
     <div className="flex h-screen w-screen bg-midnight text-cream font-nunito">
-<<<<<<< HEAD
       {/* Sidebar - width changes based on screen size */}
       <div className={`${isDesktop ? 'w-[320px]' : 'w-[0px]'} shrink-0`}>
-=======
-      {/* Sidebar */}
-      <div className="w-[320px]">
->>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
-        <SideBar />
+        {isDesktop ? (
+          <SideBar />
+        ) : (
+          // Only render if open
+          sidebarOpen && (
+            <div id="mobile-sidebar">
+              <SideBarMobile onClose={() => setSidebarOpen(false)} />
+            </div>
+          )
+        )}
       </div>
+
+      {/* Overlay for when mobile sidebar is open */}
+      {!isDesktop && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/15   bg-opacity-50 z-30" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Main content area */}
       <div className="flex-1 min-w-0 p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
         {/* Header and search */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 -mb-6">
           <div className="flex items-center">
             {!isDesktop && (
               <button 
                 onClick={toggleSidebar} 
-                className="mr-3 mb-1 text-cream hover:text-linen"
+                className="mr-3 mb-1 text-cream hover:text-linen z-40"
                 aria-label="Toggle menu"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -170,34 +181,62 @@ const mockPosts = [
               <p className="text-5xl font-pica">{title}</p>
             )}
           </div>
-          <div className="relative w-full sm:w-1/2">
-            <input
-              type="text"
-              placeholder="Search post ..."
-              className="w-full px-4 py-2 rounded-full bg-midnight border border-cream text-cream placeholder-cream focus:outline-none"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onKeyDown={handleSearch}
-            />
-            <div className="absolute right-5 top-3">
+          <div className="flex items-center gap-3 w-94 sm:w-1/2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Search post ..."
+                className="w-full px-4 py-2 rounded-full bg-midnight border border-cream text-cream placeholder-cream focus:outline-none"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onKeyDown={handleSearch}
+              />
+              <div className="absolute right-5 top-3">
                 <Search size={18} />
+              </div>
             </div>
+            <button onClick={toggleFilter} className="">
+            {isFilterOpen && (
+              
+            <div className='flex items-center text-sage justify-center w-[41.6px] h-[45.6px] rounded-lg bg-cream hover:bg-cream hover:text-midnight transition-colors'>
+              {!isDesktop && <Funnel className="" size={22} />}
+            </div>
+            
+            )}
+            {!isFilterOpen && (
+            <div className='flex items-center justify-center w-[41.6px] h-[41.6px] rounded-lg border border-cream hover:bg-cream hover:text-midnight transition-colors'>
+              {!isDesktop && <Funnel className="" size={22} />}
+            </div>
+
+            )
+            }
+          </button>
           </div>
+          {isDesktop && <Funnel />}
         </div>
 
         {/* Content and filters */}
         <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
+          
+          {/* Sidebar Tags and Meter */}
+          {!isDesktop & isFilterOpen && (
+
+            <div className="w-full lg:w-[260px] flex-shrink-0">
+            
+            <div className="sticky top-10 flex flex-col gap-4">
+              <Filter onFilterChange={handleFilterChange} initialFilter={selectedTag} />
+            </div>
+          </div>
+          )
+          }
+          
+
           {/* Posts Section */}
-<<<<<<< HEAD
-          <div className="flex-1 flex flex-col gap-6 min-w-0">
+          <div className="flex-1 mt-0 flex flex-col gap-4 min-w-0 overflow-y-auto pr-1 scrollbar-hidden">
             {isLoading ? (
               <div className="text-center py-10">Loading posts...</div>
             ) : filteredPosts.length > 0 ? (
               filteredPosts.map((post) => (
-=======
-        <div className="flex-1 flex flex-col gap-4 min-w-0 overflow-y-auto pr-1 scrollbar-hidden">
-            {mockPosts.map((post) => (
->>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
                 <PostCard
                   key={post.id}
                   id={post.id}
@@ -215,18 +254,6 @@ const mockPosts = [
             )}
           </div>
 
-          {/* Sidebar Tags and Meter */}
-          <div className="w-full lg:w-[260px] flex-shrink-0">
-            <div className="sticky top-10 flex flex-col gap-4">
-              <PostCounter currentPosts={2} maxPosts={5} />
-              <Filter/>
-
-<<<<<<< HEAD
-            <Filter onFilterChange={handleFilterChange} initialFilter={selectedTag} />
-=======
-            </div>
->>>>>>> 6a8dc5802c940258f8d685d2bbec62c0654d0bd9
-          </div>
 
         </div>
       </div>
