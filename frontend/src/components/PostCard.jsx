@@ -121,7 +121,7 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
     <>
       <div
         className="bg-sage rounded-xl p-4 border border-cream cursor-pointer transition-all duration-300"
-        onClick={handleCardClick}
+        onClick={(e) => { handleCardClick(e); handleExpand(e); }}
       >
         <h3 className="text-lg font-bold text-linen mb-2">{title}</h3>
         
