@@ -150,26 +150,30 @@
   display: none; /* Chrome, Safari, Opera */
 }
 
-
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+@keyframes wave {
+  0%, 100% {
+    height: 0.5rem;
+  }
+  50% {
+    height: 2rem;
+  }
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+.animate-wave {
+  animation: wave 1s infinite ease-in-out;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+audio::-webkit-media-controls-panel {
+  background-color: #181D31; /* midnight */
+  color: #E6DDC4;            /* cream */
+  border-radius: 0.5rem;
 }
+
+audio::-webkit-media-controls-play-button,
+audio::-webkit-media-controls-volume-slider,
+audio::-webkit-media-controls-current-time-display,
+audio::-webkit-media-controls-time-remaining-display,
+audio::-webkit-media-controls-timeline {
+  filter: invert(1); /* Light controls for dark bg */
+}
+

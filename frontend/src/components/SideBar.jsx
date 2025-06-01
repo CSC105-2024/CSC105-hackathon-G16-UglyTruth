@@ -73,9 +73,6 @@ const SideBar = () => {
 
   return (
     <>
-      {!isDesktop && isOpen && (
-        <div className="fixed inset-0 z-30" onClick={() => setIsOpen(false)} />
-      )}
 
       <div
         className={`fixed top-0 left-0 h-full w-[320px] bg-sage z-40 shadow-lg transition-transform duration-500 rounded-r-3xl flex flex-col items-center py-8 ${
