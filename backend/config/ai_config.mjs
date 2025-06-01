@@ -60,7 +60,7 @@ async function processTranscriptWithChatGPT(transcript) {
     const response = await client.chat.completions.create({
       model: "gpt-4",
       messages: [
-        { role: "system", content: "Read the following text and classify it into one of the following categories:\nLove, Family, Friends, School, Work, Money, Health, Society, Internet, Loss, Self, or Other.\n\nThen, determine if the content is severely disturbing (e.g. graphic descriptions of violence, self-harm, suicide, abuse, etc.).\n\nReply in JSON format with the following structure:\n\n```json\n{\n  \"category\": \"<category_name>\",\n  \"disturbing\": <true_or_false>\n}\n```\n\nOnly respond with the JSON object—no explanations, no extra text." },
+        { role: "system", content: "Read the following text and classify it into one of the following categories:\nLove, Family, Friends, School, Work, Money, Health, Society, Internet, Loss, Self, or Other.\n\nThen, determine if the content is severely disturbing (e.g. graphic descriptions of violence, self-harm, suicide, abuse, etc.).\n\nReply in JSON format with the following structure:\n\n{\n  \"category\": \"<category_name>\",\n  \"disturbing\": <true_or_false>\n}\n\nOnly respond with the JSON object—no explanations, no extra text." },
         { role: "user", content: transcript }
       ],
     });
@@ -72,7 +72,9 @@ async function processTranscriptWithChatGPT(transcript) {
     const result = response.choices[0].message.content;
     let parsedResult;
     try {
-      parsedResult = JSON.parse(result);
+      // Clean the result to remove markdown formatting if present
+      const cleanedResult = result.replace(/```json|```/g, '').trim();
+      parsedResult = JSON.parse(cleanedResult);
       
       // Validate and normalize category
       const validCategories = ["Love", "Family", "Friends", "School", "Work", 
@@ -113,6 +115,7 @@ async function processTranscriptWithChatGPT(transcript) {
       console.error("Stack trace:", error.stack);
     }
     console.error("=======================================");
+    
     // Return a default object if API call fails
     return {
       category: "Other",
