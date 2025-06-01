@@ -4,10 +4,9 @@ import PropTypes from 'prop-types';
 import Logo from '/UglyTruthLogo.svg';
 import PostCounter from './PostCounter';
 
-const SideBarMobile = () => {
+const SideBarMobile = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
   const MenuItem = ({ text, onClick, isActive }) => (
@@ -29,61 +28,47 @@ const SideBarMobile = () => {
     const checkScreenSize = () => {
       const desktop = window.innerWidth >= 1024;
       setIsDesktop(desktop);
-      if (desktop) setIsOpen(true);
     };
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  const handleHome = () => {
-    navigate('/home');
-    if (!isDesktop) setIsOpen(false);
-  };
-
-  const handleCreatePost = () => {
-    navigate('/create-post');
-    if (!isDesktop) setIsOpen(false);
-  };
-
-  const handleMyPrivatePosts = () => {
-    navigate('/private-posts');
-    if (!isDesktop) setIsOpen(false);
-  };
-
-  const handleMyPublicPosts = () => {
-    navigate('/public-posts');
-    if (!isDesktop) setIsOpen(false);
+  const handleNav = (path) => {
+    navigate(path);
+    if (!isDesktop && onClose) onClose();
   };
 
   const handleLogout = async () => {
-    console.log('Logging out...');
-    try {
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    navigate('/login');
+    if (onClose) onClose();
   };
 
   const menuItems = [
-    { text: 'Home', onClick: handleHome, path: '/home' },
-    { text: 'Create Post', onClick: handleCreatePost, path: '/create-post' },
-    { text: 'My Private Posts', onClick: handleMyPrivatePosts, path: '/private-posts' },
-    { text: 'My Public Posts', onClick: handleMyPublicPosts, path: '/public-posts' },
+    { text: 'Home', path: '/home' },
+    { text: 'Create Post', path: '/create-post' },
+    { text: 'My Private Posts', path: '/private-posts' },
+    { text: 'My Public Posts', path: '/public-posts' },
   ];
+
+  // Only render on mobile
+  if (isDesktop) return null;
 
   return (
     <>
-      {!isDesktop && isOpen && (
-        <div className="fixed inset-0 z-30" onClick={() => setIsOpen(false)} />
+      {/* Overlay */}
+      {isOpen && (
+        <div className="fixed inset-0 z-30" onClick={onClose} />
       )}
 
+      {/* Sidebar */}
       <div
         className={`fixed top-0 left-0 h-full w-[320px] bg-sage z-40 shadow-lg transition-transform duration-500 rounded-r-3xl flex flex-col items-center py-8 ${
-          isDesktop ? 'translate-x-0' : isOpen ? 'translate-x-0' : '-translate-x-full'
+          isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ willChange: 'transform' }}
       >
-        {/* Logo Placeholder */}
+        {/* Logo */}
         <div className="text-center mb-6">
           <div className="text-5xl font-bold font-pica text-cream leading-none">
             <img src={Logo} alt="Ugly Truth Logo" className="w- h-26 mx-auto" />
@@ -94,10 +79,10 @@ const SideBarMobile = () => {
         {/* Navigation Menu */}
         <ul className="flex flex-col gap-4 w-4/7">
           {menuItems.map((item, index) => (
-            <MenuItem 
-              key={index} 
-              text={item.text} 
-              onClick={item.onClick}
+            <MenuItem
+              key={index}
+              text={item.text}
+              onClick={() => handleNav(item.path)}
               isActive={location.pathname === item.path}
             />
           ))}
@@ -106,11 +91,12 @@ const SideBarMobile = () => {
         {/* Spacer */}
         <div className="flex-grow" />
 
-        {/* Logout Button */}
-        <div className="h-[260px]w-4/7 mb-4">
-          <PostCounter></PostCounter>
+        {/* PostCounter */}
+        <div className="h-[260px] w-4/7 mb-4">
+          <PostCounter />
         </div>
 
+        {/* Logout Button */}
         <div className="w-4/7 mb-4">
           <button
             onClick={handleLogout}
@@ -122,6 +108,11 @@ const SideBarMobile = () => {
       </div>
     </>
   );
+};
+
+SideBarMobile.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default SideBarMobile;
