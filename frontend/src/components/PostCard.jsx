@@ -10,6 +10,15 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
   const [showWarningModal, setShowWarningModal] = useState(false);
   const previewLimit = 100;
   const safeContent = content || '';
+  const { toggleRelatable, incrementViewCount } = usePost();
+  
+  // Missing state variables
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [audioLoaded, setAudioLoaded] = useState(false);
+  const [loadingAudio, setAudioLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [viewCount, setViewCount] = useState(initialViews || 0);
+  const audioRef = useRef(null);
   
   // Load audio when expanded and component mounts
   useEffect(() => {
@@ -21,16 +30,17 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
   // Update local view count when prop changes
   useEffect(() => {
     setViewCount(initialViews || 0);
+    console.log("Initial view count set to:", initialViews);
   }, [initialViews]);
   
   // Load audio directly from static server
   const loadAudio = async () => {
     try {
-      setLoadingAudio(true);
+      setAudioLoading(true);
       
       if (!audioPath) {
         console.error("No audio path provided for post:", id);
-        setLoadingAudio(false);
+        setAudioLoading(false);
         return;
       }
       
@@ -40,10 +50,10 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
       
       setAudioUrl(directUrl);
       setAudioLoaded(true);
-      setLoadingAudio(false);
+      setAudioLoading(false);
     } catch (error) {
       console.error("Error loading audio:", error);
-      setLoadingAudio(false);
+      setAudioLoading(false);
     }
   };
   
@@ -67,11 +77,20 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
     toggleRelatable(id);
   };
 
-  const handleExpand = () => {
+  const handleExpand = async () => {
     // Only increment view when expanding, not when collapsing
     if (!expanded) {
-      incrementViewCount(id);
-      setViewCount(prev => prev + 1);
+      try {
+        // Call the incrementViewCount function from context
+        await incrementViewCount(id);
+        
+        // No need to manually update view count here since it will be
+        // updated in the context state, which will propagate to props
+      } catch (error) {
+        console.error("Error incrementing view count:", error);
+        // Fallback to incrementing locally if API fails
+        setViewCount(prev => prev + 1);
+      }
     }
     setExpanded(!expanded);
   };
@@ -99,73 +118,74 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
   };
 
   return (
-    <div
-      className="bg-sage rounded-xl p-4 border border-cream cursor-pointer transition-all duration-300"
-      onClick={handleExpand}
-    >
-      <h3 className="text-lg font-bold text-linen mb-2">{title}</h3>
-      
-      <div className="flex items-center gap-2 mb-2">
-        <span className="bg-cream text-midnight px-2 py-0.5 rounded-full text-xs font-black">{tag}</span>
-        {warning && (
-          <span className="border border-2 border-amber-300 text-amber-300 px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1">
-            <TriangleAlert size={14}/>
-            Warning
-          </span>
-        )}
-        {isAudio && (
-          <span className="border border-2 border-blue-300 text-blue-300 px-2 py-0.5 rounded-full text-xs font-semibold">
-            Audio
-          </span>
-        )}
-      </div>
-
-      {expanded && isAudio && (
-        <div className="mb-4">
-          {loadingAudio ? (
-            <div className="py-3 text-linen text-sm">Loading audio...</div>
-          ) : audioUrl ? (
-            <>
-              <audio 
-                ref={audioRef} 
-                controls
-                className="w-full mb-2" 
-                src={audioUrl} 
-                onEnded={() => setIsPlaying(false)}
-              />
-              <button 
-                onClick={togglePlayback}
-                className="bg-midnight text-linen px-3 py-2 rounded-lg flex items-center gap-2 mt-2"
-              >
-                {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                {isPlaying ? 'Pause' : 'Play'} Audio
-              </button>
-            </>
-          ) : (
-            <div className="py-3 text-amber-300 text-sm">
-              Audio unavailable. Path: {audioPath || "none"}
-            </div>
+    <>
+      <div
+        className="bg-sage rounded-xl p-4 border border-cream cursor-pointer transition-all duration-300"
+        onClick={handleCardClick}
+      >
+        <h3 className="text-lg font-bold text-linen mb-2">{title}</h3>
+        
+        <div className="flex items-center gap-2 mb-2">
+          <span className="bg-cream text-midnight px-2 py-0.5 rounded-full text-xs font-black">{tag}</span>
+          {warning && (
+            <span className="border border-2 border-amber-300 text-amber-300 px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1">
+              <TriangleAlert size={14}/>
+              Warning
+            </span>
+          )}
+          {isAudio && (
+            <span className="border border-2 border-blue-300 text-blue-300 px-2 py-0.5 rounded-full text-xs font-semibold">
+              Audio
+            </span>
           )}
         </div>
-      )}
+
+        {expanded && isAudio && (
+          <div className="mb-4">
+            {loadingAudio ? (
+              <div className="py-3 text-linen text-sm">Loading audio...</div>
+            ) : audioUrl ? (
+              <>
+                <audio 
+                  ref={audioRef} 
+                  controls
+                  className="w-full mb-2" 
+                  src={audioUrl} 
+                  onEnded={() => setIsPlaying(false)}
+                />
+                <button 
+                  onClick={togglePlayback}
+                  className="bg-midnight text-linen px-3 py-2 rounded-lg flex items-center gap-2 mt-2"
+                >
+                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                  {isPlaying ? 'Pause' : 'Play'} Audio
+                </button>
+              </>
+            ) : (
+              <div className="py-3 text-amber-300 text-sm">
+                Audio unavailable. Path: {audioPath || "none"}
+              </div>
+            )}
+          </div>
+        )}
 
         <p className="text-linen text-sm mb-4">
           {expanded ? safeContent : truncatedContent}
         </p>
 
-      <div className="flex items-center justify-between text-sm text-linen font-semibold">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1"><Eye size={16} /> {viewCount}</span>
-          <span className="flex items-center gap-1"><HeartCrack size={16}/> {relatableCount}</span>
-        </div>
+        <div className="flex items-center justify-between text-sm text-linen font-semibold">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1"><Eye size={16} /> {viewCount}</span>
+            <span className="flex items-center gap-1"><HeartCrack size={16}/> {relatableCount}</span>
+          </div>
 
           {expanded && (
             <button 
-            onClick={handleToggle} 
-            className={`bg-linen text-midnight font-pica px-3 py-1 rounded-xl cursor-pointer transition-colors ${
-              userRelated ? 'bg-cream text-midnight' : 'bg-linen text-midnight'
-            }`}
-          >
+              onClick={handleToggle} 
+              className={`bg-linen text-midnight font-pica px-3 py-1 rounded-xl cursor-pointer transition-colors ${
+                userRelated ? 'bg-cream text-midnight' : 'bg-linen text-midnight'
+              }`}
+            >
               {userRelated ? 'Related' : 'Relatable'}
             </button>
           )}
@@ -205,21 +225,7 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
   );
 };
 
-PostCard.propTypes = {
-  title: PropTypes.string.isRequired,
-  tag: PropTypes.string.isRequired,
-  warning: PropTypes.bool,
-  content: PropTypes.string.isRequired,
-  likes: PropTypes.number,
-  views: PropTypes.number,
-};
-
-PostCard.defaultProps = {
-  warning: false,
-  likes: 0,
-  views: 0,
-};
-
+// Fix duplicate PropTypes definitions
 PostCard.propTypes = {
   id: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,

@@ -67,8 +67,7 @@ const SideBar = () => {
   const menuItems = [
     { text: 'Home', onClick: handleHome, path: '/home' },
     { text: 'Create Post', onClick: handleCreatePost, path: '/create-post' },
-    { text: 'My Private Posts', onClick: handleMyPrivatePosts, path: '/private-posts' },
-    { text: 'My Public Posts', onClick: handleMyPublicPosts, path: '/public-posts' },
+    { text: 'My Posts', onClick: handleMyPrivatePosts, path: '/private-posts' },
   ];
 
   return (

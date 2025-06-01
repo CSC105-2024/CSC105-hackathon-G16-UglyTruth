@@ -45,10 +45,9 @@ const SideBarMobile = ({ isOpen, onClose }) => {
   };
 
   const menuItems = [
-    { text: 'Home', path: '/home' },
+    { text: 'Home', path: '/' },
     { text: 'Create Post', path: '/create-post' },
-    { text: 'My Private Posts', path: '/private-posts' },
-    { text: 'My Public Posts', path: '/public-posts' },
+    { text: 'My Posts', path: '/private-posts' },
   ];
 
   // Only render on mobile

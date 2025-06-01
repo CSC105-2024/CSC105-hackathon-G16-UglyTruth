@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PostCounter = ({ viewedPosts = 0, maxPosts = 10 }) => {
+const PostCounter = ({ viewedPosts = 0, maxPosts = 5 }) => {
   const remainingPosts = maxPosts - viewedPosts;
   const percentage = maxPosts > 0 ? (viewedPosts / maxPosts) * 100 : 0;
   
