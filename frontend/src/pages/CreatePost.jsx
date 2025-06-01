@@ -49,14 +49,28 @@ const CreatePost = () => {
   // Recording timer
   useEffect(() => {
     if (isRecording) {
+      // Clear any existing timer first to prevent multiple timers
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
     } else {
-      clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
 
-    return () => clearInterval(timerRef.current);
+    // Cleanup function to clear the interval when component unmounts or effect re-runs
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [isRecording]);
   
   const formatTime = (seconds) => {

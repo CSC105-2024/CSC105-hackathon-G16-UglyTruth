@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Axios } from '../axiosinstance';
+import { useAuth } from './AuthContext';
 
 // Create the context
 const PostContext = createContext();
@@ -12,6 +12,17 @@ export const PostProvider = ({ children }) => {
   const [currentPost, setCurrentPost] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  // Add state to track viewed posts IDs
+  const [viewedPostIds, setViewedPostIds] = useState(() => {
+    // Load from localStorage on init
+    const saved = localStorage.getItem('viewedPostIds');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Save viewed posts to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('viewedPostIds', JSON.stringify(viewedPostIds));
+  }, [viewedPostIds]);
 
   const fetchPosts = useCallback(async () => {
     setIsLoading(true);
@@ -66,7 +77,8 @@ export const PostProvider = ({ children }) => {
       setError(error instanceof Error ? error.message : 'Failed to fetch post');
       setIsLoading(false);
     }
-  }, []);const createPost = useCallback(async (postData, isAudioUpload = false) => {
+  }, []);
+  const createPost = useCallback(async (postData, isAudioUpload = false) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -79,6 +91,10 @@ export const PostProvider = ({ children }) => {
         if (!(postData instanceof FormData)) {
           throw new Error('Audio upload requires FormData');
         }
+        // Make sure FormData includes the isPublic property
+        if (!postData.has('isPublic')) {
+          postData.append('isPublic', false);
+        }
         response = await Axios.post('/posts', postData, {
           headers: {
             'Content-Type': 'multipart/form-data'
@@ -87,7 +103,8 @@ export const PostProvider = ({ children }) => {
       } else {
         const requestData = {
           title: postData.title,
-          description: postData.description
+          description: postData.description,
+          isPublic: postData.isPublic !== undefined ? postData.isPublic : false
         };
         response = await Axios.post('/posts', requestData);
       }
@@ -201,10 +218,15 @@ export const PostProvider = ({ children }) => {
     }
   }, []);
 
-  // Function to increment view count
+  // Update incrementViewCount function to also mark post as viewed
   const incrementViewCount = async (id) => {
     try {
       if (!id) return;
+      
+      // Add to viewed posts if not already there
+      if (!viewedPostIds.includes(id)) {
+        setViewedPostIds(prev => [...prev, id]);
+      }
       
       const { data } = await Axios.post(`/posts/${id}/view`);
       
@@ -234,22 +256,9 @@ export const PostProvider = ({ children }) => {
     }
   };
 
-  // Update getPosts function to ensure warning field is included
-  const getPosts = async () => {
-    setIsLoading(true);
-    try {
-      const response = await Axios.get('/posts');
-      // Make sure warning is properly mapped from the backend data
-      const postsWithData = response.data.posts.map(post => ({
-        ...post,
-        warning: post.warning || false,  // Ensure warning exists, default to false
-      }));
-      setPosts(postsWithData);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  // Add function to check if a post has been viewed
+  const hasBeenViewed = (postId) => {
+    return viewedPostIds.includes(postId);
   };
   
   const value = {
@@ -266,7 +275,9 @@ export const PostProvider = ({ children }) => {
     deletePost,
     toggleRelatable,
     searchPosts,
-    incrementViewCount // Add this to the context value
+    incrementViewCount,
+    viewedPostIds,
+    hasBeenViewed // Add this new function to the context value
   };
 
   return <PostContext.Provider value={value}>{children}</PostContext.Provider>;

@@ -1,8 +1,24 @@
 import React from 'react';
+import { useViewLimit } from '../contexts/ViewLimitContext';
 
-const PostCounter = ({ viewedPosts = 0, maxPosts = 5 }) => {
-  const remainingPosts = maxPosts - viewedPosts;
-  const percentage = maxPosts > 0 ? (viewedPosts / maxPosts) * 100 : 0;
+const PostCounter = () => {
+  const { viewedPosts, maxDailyViews } = useViewLimit();
+  const remainingPosts = maxDailyViews - viewedPosts;
+  const percentage = maxDailyViews > 0 ? (viewedPosts / maxDailyViews) * 100 : 0;
+  
+  // Format the time to midnight in Thai time
+  const getTimeToReset = () => {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0); // Midnight
+    
+    const timeRemaining = tomorrow - now;
+    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${hours}h ${minutes}m`;
+  };
   
   return (
     <div className="bg-sage rounded-xl border border-cream p-4 shadow-sm">
@@ -17,7 +33,7 @@ const PostCounter = ({ viewedPosts = 0, maxPosts = 5 }) => {
       
       <div className="flex items-center justify-between mb-2 text-sm font-semibold text-linen/80">
         <span>Used: {viewedPosts}</span>
-        <span>Limit: {maxPosts}</span>
+        <span>Limit: {maxDailyViews}</span>
       </div>
       
       <div className="relative">
@@ -39,7 +55,6 @@ const PostCounter = ({ viewedPosts = 0, maxPosts = 5 }) => {
           </div>
         </div>
         
-        {/* Progress indicator dots */}
         <div className="flex justify-between mt-1">
           {[...Array(5)].map((_, i) => {
             const threshold = (i + 1) * 20;
@@ -57,7 +72,7 @@ const PostCounter = ({ viewedPosts = 0, maxPosts = 5 }) => {
       
       {remainingPosts === 0 && (
         <div className="mt-2 text-xs font-medium text-linen/60 text-center">
-          Daily limit reached! Reset at linen
+          Daily limit reached! Resets in {getTimeToReset()}
         </div>
       )}
     </div>

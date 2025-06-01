@@ -3,18 +3,18 @@ import SideBar from '../components/SideBar';
 import PostCard from '../components/PostCard';
 import { usePost } from '../contexts/PostContext';
 import Filter from '../components/Filter'; 
-import { Search, Funnel, Trash2 } from 'lucide-react';
+import { Search, Funnel } from 'lucide-react';
 import SideBarMobile from '../components/SideBarMobile';
 import { useAuth } from '../contexts/AuthContext';
 import { Axios } from '../axiosinstance';
 
-const PublicPosts = () => {
-  const { isLoading, deletePost } = usePost(); // Update to include deletePost
+const PrivatePosts = () => {
+  const { isLoading } = usePost();
   const { user } = useAuth();
   const [selectedTag, setSelectedTag] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [title, setTitle] = useState("PUBLIC POSTS");
-  const [publicPosts, setPublicPosts] = useState([]);
+  const [title, setTitle] = useState("PRIVATE POSTS");
+  const [privatePosts, setPrivatePosts] = useState([]);
   const [allPosts, setAllPosts] = useState([]);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -59,35 +59,33 @@ const PublicPosts = () => {
     };
   }, [sidebarOpen, isDesktop]);
 
-  // Fetch public posts for the current user
+  // Fetch private posts for the current user
   useEffect(() => {
-    const fetchPublicPosts = async () => {
+    const fetchPrivatePosts = async () => {
       if (!user || !user.id) return;
       
       setFetchLoading(true);
       try {
-        const response = await Axios.get(`/users/${user.id}/posts`);
+        const response = await Axios.get(`/users/${user.id}/posts?private=true`);
         if (response.data.success) {
-          // Filter to ensure we only get posts where isPublic is true AND they belong to the current user
-          const onlyPublicPosts = response.data.posts.filter(post => post.isPublic === true);
-          setPublicPosts(onlyPublicPosts);
+          setPrivatePosts(response.data.posts || []);
         } else {
-          console.error("Failed to fetch public posts:", response.data.message);
+          console.error("Failed to fetch private posts:", response.data.message);
         }
       } catch (error) {
-        console.error("Error fetching public posts:", error);
+        console.error("Error fetching private posts:", error);
       } finally {
         setFetchLoading(false);
       }
     };
 
-    fetchPublicPosts();
+    fetchPrivatePosts();
   }, [user]);
 
-  // Update allPosts when publicPosts changes
+  // Update allPosts when privatePosts changes
   useEffect(() => {
-    setAllPosts(publicPosts);
-  }, [publicPosts]);
+    setAllPosts(privatePosts);
+  }, [privatePosts]);
 
   const getFilteredPosts = () => {
     let postsToFilter = allPosts;
@@ -137,9 +135,9 @@ const PublicPosts = () => {
       
       // Update the title based on search and tag
       if (query) {
-        setTitle(selectedTag ? `${selectedTag} - SEARCH` : "PUBLIC POSTS - SEARCH");
+        setTitle(selectedTag ? `${selectedTag} - SEARCH` : "PRIVATE POSTS - SEARCH");
       } else {
-        setTitle(selectedTag ? selectedTag : "PUBLIC POSTS");
+        setTitle(selectedTag ? selectedTag : "PRIVATE POSTS");
       }
     }
   };
@@ -149,9 +147,9 @@ const PublicPosts = () => {
     setSearchQuery(e.target.value);
     // Immediate filtering as user types
     if (e.target.value.trim() === '') {
-      setTitle(selectedTag || "PUBLIC POSTS");
+      setTitle(selectedTag || "PRIVATE POSTS");
     } else {
-      setTitle(selectedTag ? `${selectedTag} - SEARCH` : "PUBLIC POSTS - SEARCH");
+      setTitle(selectedTag ? `${selectedTag} - SEARCH` : "PRIVATE POSTS - SEARCH");
     }
   };
 
@@ -161,9 +159,9 @@ const PublicPosts = () => {
     
     // Keep search term but update the title
     if (searchQuery.trim()) {
-      setTitle(tag ? `${tag} - SEARCH` : "PUBLIC POSTS - SEARCH");
+      setTitle(tag ? `${tag} - SEARCH` : "PRIVATE POSTS - SEARCH");
     } else {
-      setTitle(tag || "PUBLIC POSTS");
+      setTitle(tag || "PRIVATE POSTS");
     }
   };
 
@@ -171,7 +169,7 @@ const PublicPosts = () => {
   const handleSortChange = (sort) => {
     setSortBy(sort);
   };
-  
+
   const toggleFilter = () => {
     setIsFilterOpen(!isFilterOpen);
   };
@@ -180,23 +178,6 @@ const PublicPosts = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Handle post deletion
-  const handleDeletePost = async (postId) => {
-    if (!window.confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
-      return;
-    }
-    
-    try {
-      await deletePost(postId);
-      // Update the local state to remove the deleted post
-      setPublicPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
-      setAllPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      alert("Failed to delete post. Please try again.");
-    }
-  };
-  
   return (
     <div className="flex h-screen w-screen bg-midnight text-cream font-nunito">
       {/* Sidebar - width changes based on screen size */}
@@ -248,7 +229,7 @@ const PublicPosts = () => {
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Search public posts..."
+                placeholder="Search private posts..."
                 className="w-full px-4 py-2 rounded-full bg-midnight border border-cream text-cream placeholder-cream focus:outline-none"
                 value={searchQuery}
                 onChange={handleSearchChange}
@@ -258,19 +239,18 @@ const PublicPosts = () => {
                 <Search size={18} />
               </div>
             </div>
-            <button onClick={toggleFilter} className="">
+            <button onClick={toggleFilter} className={isDesktop ? "hidden" : ""}>
               {isFilterOpen ? (
                 <div className='flex items-center text-sage justify-center w-[41.6px] h-[45.6px] rounded-lg bg-cream hover:bg-cream hover:text-midnight transition-colors'>
-                  {!isDesktop && <Funnel className="" size={22} />}
+                  <Funnel className="" size={22} />
                 </div>
               ) : (
                 <div className='flex items-center justify-center w-[41.6px] h-[41.6px] rounded-lg border border-cream hover:bg-cream hover:text-midnight transition-colors'>
-                  {!isDesktop && <Funnel className="" size={22} />}
+                  <Funnel className="" size={22} />
                 </div>
               )}
             </button>
           </div>
-          {isDesktop && <Funnel />}
         </div>
 
         {/* Content and filters */}
@@ -295,30 +275,22 @@ const PublicPosts = () => {
               <div className="text-center py-10">Loading posts...</div>
             ) : filteredPosts.length > 0 ? (
               filteredPosts.map((post) => (
-                <div key={post.id} className="relative">
-                  <PostCard
-                    id={post.id}
-                    title={post.title}
-                    tag={post.category}
-                    warning={post.warning || false}
-                    content={post.description}
-                    relatableCount={post.relatableCount || 0}
-                    views={post.views || 0}
-                    userRelated={post.userRelated || false}
-                    isAudio={post.isAudio || false}
-                    audioPath={post.audioPath || null}
-                  />
-                  <button 
-                    className="absolute top-3 right-3 p-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
-                    onClick={() => handleDeletePost(post.id)}
-                    aria-label="Delete post"
-                  >
-                    <Trash2 size={18} color="white" />
-                  </button>
-                </div>
+                <PostCard
+                  key={post.id}
+                  id={post.id}
+                  title={post.title}
+                  tag={post.category}
+                  warning={post.warning || false}
+                  content={post.description}
+                  relatableCount={post.relatableCount || 0}
+                  views={post.views || 0}
+                  userRelated={post.userRelated || false}
+                  isAudio={post.isAudio || false}
+                  audioPath={post.audioPath || null}
+                />
               ))
             ) : (
-              <div className="text-center py-10">No public posts found</div>
+              <div className="text-center py-10">No private posts found</div>
             )}
           </div>
 
@@ -340,4 +312,4 @@ const PublicPosts = () => {
   );
 };
 
-export default PublicPosts;
+export default PrivatePosts;

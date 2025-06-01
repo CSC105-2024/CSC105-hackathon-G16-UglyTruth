@@ -7,9 +7,12 @@ import { usePost } from '../contexts/PostContext';
 import Filter from '../components/Filter'; 
 import { Menu, Search, Funnel } from 'lucide-react';
 import useIsMobile from '../hooks/useIsMobile';
+import { useViewLimit } from '../contexts/ViewLimitContext';
 
 const Home = () => {
   const { posts, fetchPosts, isLoading, searchPosts } = usePost();
+  // Get the values from context
+  const { viewedPosts, maxDailyViews } = useViewLimit();
   const [selectedTag, setSelectedTag] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [title, setTitle] = useState("HOME");
@@ -299,10 +302,7 @@ const Home = () => {
           {/* Sidebar Tags and Meter */}
           <div className="w-full lg:w-[260px] flex-shrink-0">
             <div className="sticky top-10 flex flex-col gap-4">
-              <PostCounter 
-                viewedPosts={0}
-                maxPosts={5} 
-              />
+              <PostCounter />
               <Filter 
                 onFilterChange={handleFilterChange} 
                 initialFilter={selectedTag} 

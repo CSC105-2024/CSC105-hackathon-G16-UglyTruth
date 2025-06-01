@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import Logo from '/UglyTruthLogo.svg';
+import { useAuth } from '../contexts/AuthContext'; // Import the auth context
+import { Axios } from '../axiosinstance'; // Import the axios instance
 
 const SideBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const { logout } = useAuth(); // Get the logout function from auth context
 
   const MenuItem = ({ text, onClick, isActive }) => (
     <li
@@ -58,6 +61,9 @@ const SideBar = () => {
   const handleLogout = async () => {
     console.log('Logging out...');
     try {
+      // Call the logout function from AuthContext
+      await logout();
+      // Navigate to login page
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -67,12 +73,13 @@ const SideBar = () => {
   const menuItems = [
     { text: 'Home', onClick: handleHome, path: '/home' },
     { text: 'Create Post', onClick: handleCreatePost, path: '/create-post' },
-    { text: 'My Posts', onClick: handleMyPrivatePosts, path: '/private-posts' },
+    { text: 'Private Posts', onClick: handleMyPrivatePosts, path: '/private-posts' },
+    { text: 'Public Posts', onClick: handleMyPublicPosts, path: '/public-posts' },
+
   ];
 
   return (
     <>
-
       <div
         className={`fixed top-0 left-0 h-full w-[320px] bg-sage z-40 shadow-lg transition-transform duration-500 rounded-r-3xl flex flex-col items-center py-8 ${
           isDesktop ? 'translate-x-0' : isOpen ? 'translate-x-0' : '-translate-x-full'

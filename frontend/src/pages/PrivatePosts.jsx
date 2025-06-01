@@ -239,19 +239,18 @@ const PrivatePosts = () => {
                 <Search size={18} />
               </div>
             </div>
-            <button onClick={toggleFilter} className="">
+            <button onClick={toggleFilter} className={isDesktop ? "hidden" : ""}>
               {isFilterOpen ? (
                 <div className='flex items-center text-sage justify-center w-[41.6px] h-[45.6px] rounded-lg bg-cream hover:bg-cream hover:text-midnight transition-colors'>
-                  {!isDesktop && <Funnel className="" size={22} />}
+                  <Funnel className="" size={22} />
                 </div>
               ) : (
                 <div className='flex items-center justify-center w-[41.6px] h-[41.6px] rounded-lg border border-cream hover:bg-cream hover:text-midnight transition-colors'>
-                  {!isDesktop && <Funnel className="" size={22} />}
+                  <Funnel className="" size={22} />
                 </div>
               )}
             </button>
           </div>
-          {isDesktop && <Funnel />}
         </div>
 
         {/* Content and filters */}

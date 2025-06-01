@@ -2,64 +2,59 @@ import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { HeartCrack, Eye, TriangleAlert, Play, Pause } from 'lucide-react';
 import { usePost } from '../contexts/PostContext';
+import { useViewLimit } from '../contexts/ViewLimitContext';
 import { Axios } from '../axiosinstance';
 
-// Update the props to include id, relatableCount, isAudio and audioPath
 const PostCard = ({ id, title, tag, warning, content, relatableCount, views: initialViews, userRelated, isAudio, audioPath }) => {
   const [expanded, setExpanded] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
+  const [isLimitExceeded, setIsLimitExceeded] = useState(false);
   const previewLimit = 100;
   const safeContent = content || '';
-  const { toggleRelatable, incrementViewCount } = usePost();
+  const { toggleRelatable, incrementViewCount: apiIncrementViewCount } = usePost();
+  const { incrementViewCount: checkAndIncrementViewLimit, hasReachedLimit } = useViewLimit();
   
-  // Missing state variables
+  // Existing state variables
   const [audioUrl, setAudioUrl] = useState(null);
-  const [audioLoaded, setAudioLoaded] = useState(false);
-  const [loadingAudio, setAudioLoading] = useState(false);
+  const [loadingAudio, setLoadingAudio] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [viewCount, setViewCount] = useState(initialViews || 0);
   const audioRef = useRef(null);
   
   // Load audio when expanded and component mounts
   useEffect(() => {
-    if (expanded && isAudio && audioPath && !audioLoaded && !audioUrl) {
+    if (expanded && isAudio && audioPath && !audioUrl) {
       loadAudio();
     }
-  }, [expanded, isAudio, audioPath, audioLoaded, audioUrl]);
+  }, [expanded, isAudio, audioPath, audioUrl]);
 
   // Update local view count when prop changes
   useEffect(() => {
     setViewCount(initialViews || 0);
-    console.log("Initial view count set to:", initialViews);
   }, [initialViews]);
   
   // Load audio directly from static server
   const loadAudio = async () => {
+    if (!audioPath) return;
+    
+    setLoadingAudio(true);
     try {
-      setAudioLoading(true);
-      
-      if (!audioPath) {
-        console.error("No audio path provided for post:", id);
-        setAudioLoading(false);
-        return;
-      }
-      
-      console.log("Loading audio for path:", audioPath);
-      // Direct URL to audio file
-      const directUrl = `http://localhost:3000/${audioPath}`;
-      
-      setAudioUrl(directUrl);
-      setAudioLoaded(true);
-      setAudioLoading(false);
+      // Construct URL directly to the audio file on the server
+      // Using the base URL from environment or hardcoded localhost:3000
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      // Ensure we're using the direct filename from audioPath without additional path segments
+      const url = `${baseUrl}/${audioPath}`;
+      console.log('Loading audio from:', url); // For debugging
+      setAudioUrl(url);
     } catch (error) {
-      console.error("Error loading audio:", error);
-      setAudioLoading(false);
+      console.error('Error loading audio:', error);
+    } finally {
+      setLoadingAudio(false);
     }
   };
   
-  // Audio control functions
   const togglePlayback = (e) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent card expansion
     
     if (audioRef.current) {
       if (isPlaying) {
@@ -77,51 +72,86 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
     toggleRelatable(id);
   };
 
-  const handleExpand = async () => {
-    // Only increment view when expanding, not when collapsing
-    if (!expanded) {
-      try {
-        // Call the incrementViewCount function from context
-        await incrementViewCount(id);
-        
-        // No need to manually update view count here since it will be
-        // updated in the context state, which will propagate to props
-      } catch (error) {
-        console.error("Error incrementing view count:", error);
-        // Fallback to incrementing locally if API fails
-        setViewCount(prev => prev + 1);
-      }
+  // Check the view limit first, then handle the expansion
+  const handleCardClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // First check: If already expanded, just collapse
+    if (expanded) {
+      setExpanded(false);
+      return;
     }
-    setExpanded(!expanded);
+    
+    // Second check: If warning content and not expanded, show warning
+    if (warning && !expanded) {
+      // Before showing warning, check if we've reached the limit
+      if (hasReachedLimit) {
+        setIsLimitExceeded(true);
+        setShowWarningModal(true);
+        return;
+      }
+      // If we have warnings but haven't reached limit, show content warning
+      setShowWarningModal(true);
+      return;
+    }
+    
+    // Third check: If we've reached the limit and trying to expand
+    if (hasReachedLimit && !expanded) {
+      setIsLimitExceeded(true);
+      setShowWarningModal(true);
+      return;
+    }
+    
+    // If we get here, we can expand the post
+    handleExpand();
+  };
+
+  const handleExpand = async () => {
+    // Check if user has reached daily limit
+    const canView = checkAndIncrementViewLimit(id);
+    
+    if (!canView) {
+      setIsLimitExceeded(true);
+      setShowWarningModal(true);
+      return;
+    }
+    
+    try {
+      // Call the incrementViewCount function from context
+      await apiIncrementViewCount(id);
+    } catch (error) {
+      console.error("Error incrementing view count:", error);
+      // Fallback to incrementing locally if API fails
+      setViewCount(prev => prev + 1);
+    }
+    
+    setExpanded(true);
+  };
+  
+  const handleConfirm = () => {
+    setShowWarningModal(false);
+    
+    // Only proceed if user hasn't reached limit
+    if (!isLimitExceeded) {
+      handleExpand();
+    }
+  };
+  
+  const handleCancel = (e) => {
+    e.stopPropagation();
+    setShowWarningModal(false);
   };
   
   const truncatedContent = safeContent.length > previewLimit
     ? safeContent.slice(0, previewLimit) + '...'
     : safeContent;
 
-  const handleCardClick = () => {
-    if (warning && !expanded) {
-      setShowWarningModal(true);
-    } else {
-      setExpanded((prev) => !prev);
-    }
-  };
-
-  const handleConfirm = () => {
-    setShowWarningModal(false);
-    setExpanded(true);
-  };
-
-  const handleCancel = (e) => {
-    e.stopPropagation();
-    setShowWarningModal(false);
-  };
-
   return (
     <>
       <div
-        className="bg-sage rounded-xl p-4 border border-cream cursor-pointer transition-all duration-300"
-        onClick={(e) => { handleCardClick(e); handleExpand(e); }}
+        className={`bg-sage rounded-xl p-4 border border-cream transition-all duration-300 ${hasReachedLimit && !expanded ? 'opacity-70' : 'cursor-pointer'}`}
+        onClick={handleCardClick}
       >
         <h3 className="text-lg font-bold text-linen mb-2">{title}</h3>
         
@@ -192,30 +222,47 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
         </div>
       </div>
 
-      {/* Warning Modal */}
+      {/* Warning/Limit Modal */}
       {showWarningModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-sage border-cream border rounded-xl p-6 max-w-xs w-full text-center shadow-xl">
             <div className="flex flex-col items-center gap-2 mb-4">
-              <TriangleAlert size={32} className="text-amber-300" />
-              <h4 className="text-lg font-bold text-amber-300">Warning</h4>
+              {isLimitExceeded ? (
+                // Daily limit exceeded modal
+                <>
+                  <TriangleAlert size={32} className="text-red-500" />
+                  <h4 className="text-lg font-bold text-linen">Daily Limit Reached</h4>
+                </>
+              ) : (
+                // Content warning modal
+                <>
+                  <TriangleAlert size={32} className="text-amber-300" />
+                  <h4 className="text-lg font-bold text-amber-300">Warning</h4>
+                </>
+              )}
             </div>
+            
             <p className="text-linen mb-6">
-              This post may contain disturbing or sensitive content.<br />
-              Are you sure you want to continue?
+              {isLimitExceeded 
+                ? "You've reached your daily post view limit. Please come back tomorrow to view more posts."
+                : "This post may contain disturbing or sensitive content. Are you sure you want to continue?"
+              }
             </p>
+            
             <div className="flex justify-center gap-4">
-              <button
-                className="px-4 py-2 rounded-lg bg-amber-300 text-midnight font-bold hover:bg-amber-200 transition"
-                onClick={handleConfirm}
-              >
-                Continue
-              </button>
+              {!isLimitExceeded && (
+                <button
+                  className="px-4 py-2 rounded-lg bg-amber-300 text-midnight font-bold hover:bg-amber-200 transition"
+                  onClick={handleConfirm}
+                >
+                  Continue
+                </button>
+              )}
               <button
                 className="px-4 py-2 rounded-lg border border-cream text-cream hover:bg-cream hover:text-sage transition"
                 onClick={handleCancel}
               >
-                Cancel
+                {isLimitExceeded ? 'Close' : 'Cancel'}
               </button>
             </div>
           </div>
@@ -225,27 +272,17 @@ const PostCard = ({ id, title, tag, warning, content, relatableCount, views: ini
   );
 };
 
-// Fix duplicate PropTypes definitions
 PostCard.propTypes = {
-  id: PropTypes.string.isRequired,
+  id: PropTypes.number.isRequired,
   title: PropTypes.string.isRequired,
-  tag: PropTypes.string.isRequired,
+  tag: PropTypes.string,
   warning: PropTypes.bool,
-  content: PropTypes.string.isRequired,
+  content: PropTypes.string,
   relatableCount: PropTypes.number,
   views: PropTypes.number,
   userRelated: PropTypes.bool,
   isAudio: PropTypes.bool,
-  audioPath: PropTypes.string
-};
-
-PostCard.defaultProps = {
-  warning: false,
-  relatableCount: 0,
-  views: 0,
-  userRelated: false,
-  isAudio: false,
-  audioPath: null
+  audioPath: PropTypes.string,
 };
 
 export default PostCard;
