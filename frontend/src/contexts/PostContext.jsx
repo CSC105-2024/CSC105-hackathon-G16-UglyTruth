@@ -234,6 +234,24 @@ export const PostProvider = ({ children }) => {
     }
   };
 
+  // Update getPosts function to ensure warning field is included
+  const getPosts = async () => {
+    setIsLoading(true);
+    try {
+      const response = await Axios.get('/posts');
+      // Make sure warning is properly mapped from the backend data
+      const postsWithData = response.data.posts.map(post => ({
+        ...post,
+        warning: post.warning || false,  // Ensure warning exists, default to false
+      }));
+      setPosts(postsWithData);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const value = {
     posts,
     userPosts,

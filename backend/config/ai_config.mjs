@@ -60,7 +60,7 @@ async function processTranscriptWithChatGPT(transcript) {
     const response = await client.chat.completions.create({
       model: "gpt-4",
       messages: [
-        { role: "system", content: "CAN YOU FKAONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD ONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD ONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD ONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD ONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD ONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD ONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD ONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD ONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD ONLY REPLY WITH THE CATEGORY NAME< NOTHING ELSE NOTHIONG NOTHOLEM PLS GOD Love – dating, heartbreak, rejection, romantic struggles Family – conflicts, pressure, responsibilities Friends – betrayal, loneliness, social drama School – academics, teachers, peer pressure Work – job stress, coworkers, burnout Money – debt, bills, financial anxiety Health – physical or mental health struggles Society – injustice, politics, cultural pressure Internet – social media, online drama, tech fatigue Loss – grief, death, separation Self – identity crisis, low self-esteem, existential dread Other – for anything that doesn't fit neatly into the above. ONLY RESPOND WITH ONE WORD FROM THE CATEGORY NAME LIST ABOVE" },
+        { role: "system", content: "Read the following text and classify it into one of the following categories:\nLove, Family, Friends, School, Work, Money, Health, Society, Internet, Loss, Self, or Other.\n\nThen, determine if the content is severely disturbing (e.g. graphic descriptions of violence, self-harm, suicide, abuse, etc.).\n\nReply in JSON format with the following structure:\n\n```json\n{\n  \"category\": \"<category_name>\",\n  \"disturbing\": <true_or_false>\n}\n```\n\nOnly respond with the JSON object—no explanations, no extra text." },
         { role: "user", content: transcript }
       ],
     });
@@ -70,11 +70,41 @@ async function processTranscriptWithChatGPT(transcript) {
     const elapsedMs = endTime - startTime;
     
     const result = response.choices[0].message.content;
-    console.log(`Categorization completed in ${elapsedMs}ms`);
-    console.log(`Category result: "${result}"`);
-    console.log("=========================================");
-    
-    return result;
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(result);
+      
+      // Validate and normalize category
+      const validCategories = ["Love", "Family", "Friends", "School", "Work", 
+                               "Money", "Health", "Society", "Internet", "Loss", "Self"];
+      
+      // Case insensitive matching for categories
+      const normalizedCategory = validCategories.find(
+        cat => cat.toLowerCase() === parsedResult.category?.toLowerCase()
+      );
+      
+      // If category is not valid, set to "Other"
+      parsedResult.category = normalizedCategory || "Other";
+      
+      // Validate and normalize disturbing flag
+      if (typeof parsedResult.disturbing !== "boolean") {
+        console.log(`Invalid 'disturbing' value: ${parsedResult.disturbing}, defaulting to false`);
+        parsedResult.disturbing = false;
+      }
+      
+      console.log(`Categorization completed in ${elapsedMs}ms`);
+      console.log(`Category result: "${parsedResult.category}", Disturbing: ${parsedResult.disturbing}`);
+      console.log("=========================================");
+      
+      return parsedResult;
+    } catch (error) {
+      console.error("Failed to parse JSON response:", result);
+      // Return a default object if parsing fails
+      return {
+        category: "Other",
+        disturbing: false
+      };
+    }
   } catch (error) {
     console.error("===== ERROR PROCESSING WITH CHATGPT =====");
     console.error("Error details:", error);
@@ -83,7 +113,11 @@ async function processTranscriptWithChatGPT(transcript) {
       console.error("Stack trace:", error.stack);
     }
     console.error("=======================================");
-    throw error;
+    // Return a default object if API call fails
+    return {
+      category: "Other",
+      disturbing: false
+    };
   }
 }
 
@@ -112,7 +146,7 @@ async function processAudioWithAI(audioFilePath) {
     console.log(`===== PROCESSING COMPLETED =====`);
     console.log(`Total processing time: ${elapsedMs}ms`);
     console.log(`Final transcript: "${transcript}"`);
-    console.log(`Final category: "${response}"`);
+    console.log(`Final category: "${response.category}", Disturbing: ${response.disturbing}`);
     console.log(`================================`);
     
     return {

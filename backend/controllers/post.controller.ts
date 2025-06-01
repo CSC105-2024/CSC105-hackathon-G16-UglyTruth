@@ -11,6 +11,8 @@ export class PostController {
       title: post.title,
       description: post.description,
       category: post.category,
+      warning: post.warning, // Make sure this field is included
+      isPublic: post.isPublic,
       isAudio: post.isAudio || false,
       audioPath: post.audioPath || null,
       author: {
@@ -29,6 +31,11 @@ export class PostController {
 
   static async createPost(c: Context) {
     try {
+      // Import modules at the top of the function
+      const os = await import('os');
+      const path = await import('path');
+      const fs = await import('fs');
+
       let title = '';
       let description = '';
       let category = '';
@@ -55,24 +62,6 @@ export class PostController {
           return c.json({ success: false, message: 'No audio file uploaded' }, 400);
         }
         
-        // Save audio to temp file
-        const os = await import('os');
-        const path = await import('path');
-        const fs = await import('fs');
-        const fileName = audioFile.name || `audio_${Date.now()}.mp3`;
-        const tempDir = os.default.tmpdir();
-        const tempFilePath = path.default.join(tempDir, `upload_${Date.now()}.${fileName.split('.').pop()}`);
-        const fileBuffer = Buffer.from(await audioFile.arrayBuffer());
-        fs.default.writeFileSync(tempFilePath, fileBuffer);
-        
-        // Process audio: get transcript and category
-        const aiResult = await processAudioWithAI(tempFilePath);
-        transcript = aiResult.transcript;
-        category = (aiResult.response || '').trim();
-        description = transcript;
-        
-        // Clean up temp file
-        fs.default.unlinkSync(tempFilePath);
         isAudio = true;
         
         // Create audio storage directory if it doesn't exist
@@ -86,6 +75,57 @@ export class PostController {
         // Store only the filename in audioPath, not the full path
         audioPath = uniqueFilename;
         
+        // Save audio to temp file
+        const fileName = audioFile.name || `audio_${Date.now()}.mp3`;
+        const tempDir = os.default.tmpdir();
+        const tempFilePath = path.default.join(tempDir, `upload_${Date.now()}.${fileName.split('.').pop()}`);
+        const fileBuffer = Buffer.from(await audioFile.arrayBuffer());
+        fs.default.writeFileSync(tempFilePath, fileBuffer);
+        
+        // Process audio: get transcript and category
+        const aiResult = await processAudioWithAI(tempFilePath);
+        transcript = aiResult.transcript;
+        category = aiResult.response.category || 'Other';
+        const isDisturbing = aiResult.response.disturbing || false;
+        description = transcript;
+        
+        // Clean up temp file
+        fs.default.unlinkSync(tempFilePath);
+        
+        // Save post with transcript and category
+        const post = await prisma.post.create({
+          data: {
+            title,
+            description,
+            category,
+            warning: isDisturbing, // Set warning flag based on disturbing value
+            isAudio,
+            audioPath, // Save just the filename
+            authorId: user.id
+          },
+          include: {
+            author: true
+          }
+        });
+        
+        const formattedPost = PostController.formatPost(post);
+
+        // If it's an audio post, store the audio file with the unique filename
+        if (isAudio && audioFile) {
+          try {
+            // Save the audio file with the unique filename in audio_storage directory
+            const fullAudioPath = path.default.join(process.cwd(), 'audio_storage', audioPath);
+            const fileBuffer = Buffer.from(await audioFile.arrayBuffer());
+            fs.default.writeFileSync(fullAudioPath, fileBuffer);
+            console.log(`Audio saved successfully at ${fullAudioPath}`);
+            
+          } catch (err) {
+            console.error('Error saving audio file:', err);
+          }
+        }
+
+        return c.json({ success: true, post: formattedPost }, 201);
+        
       } else {
         // Handle JSON (text)
         const body = await c.req.json();
@@ -95,45 +135,31 @@ export class PostController {
           return c.json({ success: false, message: 'Missing required fields' }, 400);
         }
         const aiConfig = await import('../config/ai_config.mjs');
-        const cat = await aiConfig.processTranscriptWithChatGPT(`${title} ${description}`);
-        category = (cat || '').trim();
-      }
-
-      // Save post with determined category and audio path
-      const post = await prisma.post.create({
-        data: {
-          title,
-          description,
-          category,
-          isAudio,
-          audioPath, // Save just the filename
-          authorId: user.id
-        },
-        include: {
-          author: true
-        }
-      });
-      
-      const formattedPost = PostController.formatPost(post);
-
-      // If it's an audio post, store the audio file with the unique filename
-      if (isAudio && audioFile) {
-        const fs = await import('fs');
-        const path = await import('path');
+        const aiResult = await aiConfig.processTranscriptWithChatGPT(`${title} ${description}`);
+        category = aiResult.category || 'Other';
+        const isDisturbing = aiResult.disturbing || false;
         
-        try {
-          // Save the audio file with the unique filename in audio_storage directory
-          const fullAudioPath = path.default.join(process.cwd(), 'audio_storage', audioPath);
-          const fileBuffer = Buffer.from(await audioFile.arrayBuffer());
-          fs.default.writeFileSync(fullAudioPath, fileBuffer);
-          console.log(`Audio saved successfully at ${fullAudioPath}`);
-          
-        } catch (err) {
-          console.error('Error saving audio file:', err);
-        }
-      }
+        console.log(`Post category: ${category}, Warning: ${isDisturbing}`);
 
-      return c.json({ success: true, post: formattedPost }, 201);
+        // Save post with determined category and warning flag
+        const post = await prisma.post.create({
+          data: {
+            title,
+            description,
+            category,
+            warning: isDisturbing, // Set the warning field based on the disturbing flag
+            isAudio,
+            audioPath, // Save just the filename
+            authorId: user.id
+          },
+          include: {
+            author: true
+          }
+        });
+        
+        const formattedPost = PostController.formatPost(post);
+        return c.json({ success: true, post: formattedPost }, 201);
+      }
     } catch (error) {
       console.error('Error creating post:', error);
       return c.json({ success: false, message: 'Internal server error' }, 500);

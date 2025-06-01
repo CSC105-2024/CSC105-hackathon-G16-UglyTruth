@@ -3,13 +3,13 @@ import SideBar from '../components/SideBar';
 import PostCard from '../components/PostCard';
 import { usePost } from '../contexts/PostContext';
 import Filter from '../components/Filter'; 
-import { Search, Funnel } from 'lucide-react';
+import { Search, Funnel, Trash2 } from 'lucide-react';
 import SideBarMobile from '../components/SideBarMobile';
 import { useAuth } from '../contexts/AuthContext';
 import { Axios } from '../axiosinstance';
 
 const PublicPosts = () => {
-  const { isLoading } = usePost();
+  const { isLoading, deletePost } = usePost(); // Update to include deletePost
   const { user } = useAuth();
   const [selectedTag, setSelectedTag] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -180,6 +180,23 @@ const PublicPosts = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+  // Handle post deletion
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      await deletePost(postId);
+      // Update the local state to remove the deleted post
+      setPublicPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+      setAllPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      alert("Failed to delete post. Please try again.");
+    }
+  };
+  
   return (
     <div className="flex h-screen w-screen bg-midnight text-cream font-nunito">
       {/* Sidebar - width changes based on screen size */}
@@ -278,19 +295,27 @@ const PublicPosts = () => {
               <div className="text-center py-10">Loading posts...</div>
             ) : filteredPosts.length > 0 ? (
               filteredPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  id={post.id}
-                  title={post.title}
-                  tag={post.category}
-                  warning={post.warning || false}
-                  content={post.description}
-                  relatableCount={post.relatableCount || 0}
-                  views={post.views || 0}
-                  userRelated={post.userRelated || false}
-                  isAudio={post.isAudio || false}
-                  audioPath={post.audioPath || null}
-                />
+                <div key={post.id} className="relative">
+                  <PostCard
+                    id={post.id}
+                    title={post.title}
+                    tag={post.category}
+                    warning={post.warning || false}
+                    content={post.description}
+                    relatableCount={post.relatableCount || 0}
+                    views={post.views || 0}
+                    userRelated={post.userRelated || false}
+                    isAudio={post.isAudio || false}
+                    audioPath={post.audioPath || null}
+                  />
+                  <button 
+                    className="absolute top-3 right-3 p-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                    onClick={() => handleDeletePost(post.id)}
+                    aria-label="Delete post"
+                  >
+                    <Trash2 size={18} color="white" />
+                  </button>
+                </div>
               ))
             ) : (
               <div className="text-center py-10">No public posts found</div>

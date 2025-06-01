@@ -13,14 +13,14 @@ const PrivatePosts = () => {
   const { user } = useAuth();
   const [selectedTag, setSelectedTag] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  cost [title, setTitle] = useState("PRIVATE POSTS");
+  const [title, setTitle] = useState("PRIVATE POSTS");
   const [privatePosts, setPrivatePosts] = useState([]);
   const [allPosts, setAllPosts] = useState([]);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(false);
-  const [sortBy, setSortBy] = useState(null``);
+  const [sortBy, setSortBy] = useState(null);
   
   // Handle screen size changes
   useEffect(() => {
