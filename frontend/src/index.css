@@ -164,8 +164,8 @@
 }
 
 audio::-webkit-media-controls-panel {
-  background-color: #181D31; /* midnight */
-  color: #E6DDC4;            /* cream */
+  background-color: #678983; /* cream */
+  color: #E6DDC4;            /* midnight */
   border-radius: 0.5rem;
 }
 
