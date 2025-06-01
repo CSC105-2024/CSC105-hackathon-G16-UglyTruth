@@ -286,7 +286,7 @@ const CreatePost = () => {
                 type="submit"
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-midnight bg-midnight text-cream font-medium text-sm rounded-xl shadow-md hover:bg-midnight/90 transition"
               >
-                Share Experience
+                Share Publicly
               </button>
             </div>
           </form>
