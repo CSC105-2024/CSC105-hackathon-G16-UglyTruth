@@ -5,7 +5,7 @@ const Filter = ({ onFilterChange, initialFilter = null, onSortChange }) => {
   const [selectedSort, setSelectedSort] = useState(null);
 
   const tags = [
-    "Home", "Love", "Friends", "Family", "School", "Work",
+    "Love", "Friends", "Family", "School", "Work",
     "Money", "Health", "Society", "Internet", "Loss", "Self", "Other"
   ];
 

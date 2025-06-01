@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE `Post` ADD COLUMN `isAudio` BOOLEAN NOT NULL DEFAULT false;

@@ -54,7 +54,7 @@ export const UserModel = {
     return bcrypt.compare(password, user.password);
   },
   
-  async search(query: string, limit: number = 10, currentUserId?: number) {
+  async search(query: string, limit: number = 5, currentUserId?: number) {
     let whereClause: any = {
       OR: [
         { email: { contains: query } }
