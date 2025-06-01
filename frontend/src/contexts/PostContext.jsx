@@ -46,7 +46,6 @@ export const PostProvider = ({ children }) => {
       setIsLoading(false);
     }
   }, []);
-
   const fetchPostById = useCallback(async (id) => {
     setIsLoading(true);
     setError(null);
@@ -55,6 +54,10 @@ export const PostProvider = ({ children }) => {
       const { data } = await Axios.get(`/posts/${id}`);
       if (data.success) {
         setCurrentPost(data.post);
+        
+        // We don't need to pre-check audio here anymore
+        // The individual PostCard component will handle loading the audio
+        
       } else {
         throw new Error(data.message || 'Post not found');
       }
@@ -63,7 +66,7 @@ export const PostProvider = ({ children }) => {
       setError(error instanceof Error ? error.message : 'Failed to fetch post');
       setIsLoading(false);
     }
-  }, []);  const createPost = useCallback(async (postData, isAudioUpload = false) => {
+  }, []);const createPost = useCallback(async (postData, isAudioUpload = false) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -214,12 +217,20 @@ export const PostProvider = ({ children }) => {
       setPosts(prevPosts => prevPosts.map(post => 
         post.id === id ? {
           ...post,
-          views: (post.views || 0) + 1
+          views: data.data.views || (post.views || 0) + 1
         } : post
       ));
       
     } catch (error) {
       console.error('Error incrementing view count:', error);
+      // Instead of stopping completely, we can just update the local state
+      // to provide a better user experience even when the API fails
+      setPosts(prevPosts => prevPosts.map(post => 
+        post.id === id ? {
+          ...post,
+          views: (post.views || 0) + 1
+        } : post
+      ));
     }
   };
 

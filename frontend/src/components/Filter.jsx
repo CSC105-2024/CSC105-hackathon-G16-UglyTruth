@@ -77,6 +77,7 @@ const Filter = ({ onFilterChange, initialFilter = null, onSortChange }) => {
 
       {/* Sort Buttons */}
       <div className="flex flex-wrap gap-2">
+        <h3 className="w-full font-bold text-sm text-linen mb-1">Sort by</h3>
         {sortOptions.map(option => (
           <button
             key={option.value}

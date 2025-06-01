@@ -36,7 +36,7 @@ const SideBar = () => {
   }, []);
 
   const handleHome = () => {
-    navigate('');
+    navigate('/');
     if (!isDesktop) setIsOpen(false);
   };
 

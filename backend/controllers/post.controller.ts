@@ -5,25 +5,27 @@ const prisma = new PrismaClient();
 
 export class PostController {
 
-private static formatPost(post: any, currentUserId?: number) {
-  return {
-    id: post.id.toString(),
-    title: post.title,
-    description: post.description,
-    category: post.category,
-    author: {
-      id: post.author.id.toString(),
-      email: post.author.email,
-      createdAt: post.author.createdAt.toISOString()
-    },
-    relatableCount: post.relatableCount ?? post.relatables?.length ?? 0,
-    views: post.views ?? 0, // Make sure views is included
-    userRelated: currentUserId && post.relatables ? 
-      post.relatables.some((rel: any) => rel.userId === currentUserId) : false,
-    createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString()
-  };
-}
+  private static formatPost(post: any, currentUserId?: number) {
+    return {
+      id: post.id.toString(),
+      title: post.title,
+      description: post.description,
+      category: post.category,
+      isAudio: post.isAudio || false,
+      audioPath: post.audioPath || null,
+      author: {
+        id: post.author.id.toString(),
+        email: post.author.email,
+        createdAt: post.author.createdAt.toISOString()
+      },
+      relatableCount: post.relatableCount ?? post.relatables?.length ?? 0,
+      views: post.views ?? 0,
+      userRelated: currentUserId && post.relatables ? 
+        post.relatables.some((rel: any) => rel.userId === currentUserId) : false,
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString()
+    };
+  }
 
   static async createPost(c: Context) {
     try {
@@ -33,21 +35,26 @@ private static formatPost(post: any, currentUserId?: number) {
       const user = c.get('user');
       let isAudio = false;
       let transcript = '';
+      let audioPath = null;
 
       const contentType = c.req.header('content-type') || '';
+      let audioFile: any;
+      
       if (contentType.includes('multipart/form-data')) {
         // Handle audio upload
         const form = await c.req.formData();
-        const audioFile = form.get('audio');
+        audioFile = form.get('audio');
         const titleEntry = form.get('title');
         if (typeof titleEntry === 'string') {
           title = titleEntry;
         } else {
           title = '';
         }
+        
         if (!audioFile || typeof audioFile === 'string') {
           return c.json({ success: false, message: 'No audio file uploaded' }, 400);
         }
+        
         // Save audio to temp file
         const os = await import('os');
         const path = await import('path');
@@ -57,14 +64,28 @@ private static formatPost(post: any, currentUserId?: number) {
         const tempFilePath = path.default.join(tempDir, `upload_${Date.now()}.${fileName.split('.').pop()}`);
         const fileBuffer = Buffer.from(await audioFile.arrayBuffer());
         fs.default.writeFileSync(tempFilePath, fileBuffer);
+        
         // Process audio: get transcript and category
         const aiResult = await processAudioWithAI(tempFilePath);
         transcript = aiResult.transcript;
         category = (aiResult.response || '').trim();
         description = transcript;
+        
         // Clean up temp file
         fs.default.unlinkSync(tempFilePath);
         isAudio = true;
+        
+        // Create audio storage directory if it doesn't exist
+        const audioDir = path.default.join(process.cwd(), 'audio_storage');
+        if (!fs.default.existsSync(audioDir)) {
+          fs.default.mkdirSync(audioDir, { recursive: true });
+        }
+        
+        // Generate a unique filename for the audio file
+        const uniqueFilename = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.mp3`;
+        // Store only the filename in audioPath, not the full path
+        audioPath = uniqueFilename;
+        
       } else {
         // Handle JSON (text)
         const body = await c.req.json();
@@ -78,19 +99,40 @@ private static formatPost(post: any, currentUserId?: number) {
         category = (cat || '').trim();
       }
 
-      // Save post with determined category
+      // Save post with determined category and audio path
       const post = await prisma.post.create({
         data: {
           title,
           description,
           category,
+          isAudio,
+          audioPath, // Save just the filename
           authorId: user.id
         },
         include: {
           author: true
         }
       });
+      
       const formattedPost = PostController.formatPost(post);
+
+      // If it's an audio post, store the audio file with the unique filename
+      if (isAudio && audioFile) {
+        const fs = await import('fs');
+        const path = await import('path');
+        
+        try {
+          // Save the audio file with the unique filename in audio_storage directory
+          const fullAudioPath = path.default.join(process.cwd(), 'audio_storage', audioPath);
+          const fileBuffer = Buffer.from(await audioFile.arrayBuffer());
+          fs.default.writeFileSync(fullAudioPath, fileBuffer);
+          console.log(`Audio saved successfully at ${fullAudioPath}`);
+          
+        } catch (err) {
+          console.error('Error saving audio file:', err);
+        }
+      }
+
       return c.json({ success: true, post: formattedPost }, 201);
     } catch (error) {
       console.error('Error creating post:', error);
@@ -351,38 +393,71 @@ static async relatePost(c: Context) {
         return c.json({ success: false, message: 'Invalid post ID' }, 400);
       }
 
+      // Increment view count
       const updatedPost = await prisma.post.update({
         where: { id: postId },
-        data: { views: { increment: 1 } },
-        include: { author: true, relatables: true }
+        data: { 
+          views: { increment: 1 } 
+        },
+        include: {
+          author: true,
+          relatables: true
+        }
       });
-
-      if (!updatedPost) {
-        return c.json({ success: false, message: 'Post not found' }, 404);
-      }
 
       const user = c.get('user');
       const userId = user ? user.id : undefined;
-      
+      const formattedPost = PostController.formatPost(updatedPost, userId);
+
       return c.json({
         success: true,
-        data: PostController.formatPost(updatedPost, userId)
+        data: formattedPost
       });
     } catch (error) {
       console.error('Error incrementing view count:', error);
       return c.json({ success: false, message: 'Internal server error' }, 500);
     }
+  }  static async getPostAudio(c: Context) {
+    try {
+      const postId = parseInt(c.req.param('id'));
+      
+      if (isNaN(postId)) {
+        return c.json({ success: false, message: 'Invalid post ID' }, 400);
+      }
+      
+      const post = await prisma.post.findUnique({
+        where: { id: postId }
+      });
+      
+      if (!post || !post.isAudio) {
+        return c.json({ success: false, message: 'Audio not found' }, 404);
+      }
+      
+      if (post.audioPath) {
+        // Return the filename directly
+        return c.json({ 
+          success: true, 
+          filename: post.audioPath 
+        });
+      } else {
+        // No audio path available
+        return c.json({ success: false, message: 'Audio file information not found' }, 404);
+      }
+    } catch (error) {
+      console.error('Error retrieving post audio:', error);
+      return c.json({ success: false, message: 'Internal server error' }, 500);
+    }
   }
-
+  
   private static async getAllPostsInternal() {
     const posts = await prisma.post.findMany({
       orderBy: { createdAt: 'desc' },
       include: { author: true }
     });
-
     return posts.map(post => PostController.formatPost(post));
   }
 }
+
 process.on('beforeExit', async () => {
-  await prisma.$disconnect()
-})
+  await prisma.$disconnect();
+});

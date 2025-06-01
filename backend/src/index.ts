@@ -2,6 +2,8 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
+import { serveStatic } from '@hono/node-server/serve-static';
+import path from 'path';
 import dotenv from 'dotenv';
 import api from '../routes/index.ts';
 
@@ -24,6 +26,9 @@ app.use('*', cors({
 app.get('/', (c) => {
   return c.json({ status: 'success', message: 'UglyTruth API is running' });
 });
+
+// Serve static files from audio_storage directory
+app.use('*', serveStatic({ root: './audio_storage' }));
 
 app.route('', api);
 

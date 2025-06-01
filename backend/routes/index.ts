@@ -28,9 +28,9 @@ api.post('/auth/logout', (c) => {
 
 // Public routes - Specific routes before parameterized routes
 api.get('/posts', PostController.getAllPosts);
-api.get('/posts/filter', PostController.filterPostsByLocation); 
 api.get('/posts/search', PostController.searchPosts);           
 api.get('/posts/:id', PostController.getPostById);
+api.get('/posts/:id/audio', PostController.getPostAudio);
 api.get('/users/:userId/posts', PostController.getUserPosts);
 api.post('/ai/transcribe', AIController.transcribeAudio);
 // everything below needs auth token
@@ -44,6 +44,7 @@ protectedRoutes.put('/posts/:id', PostController.updatePost);
 protectedRoutes.delete('/posts/:id', PostController.deletePost);
 protectedRoutes.post('/posts/:id/relatable', PostController.relatePost);
 protectedRoutes.get('/posts/:id/view', PostController.incrementViewCount);
+protectedRoutes.post('/posts/:id/view', PostController.incrementViewCount);
 
 // Mount protected routes to the main API router
 api.route('', protectedRoutes);

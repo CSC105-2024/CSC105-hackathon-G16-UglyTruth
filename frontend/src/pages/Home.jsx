@@ -16,6 +16,7 @@ const Home = () => {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [sortBy, setSortBy] = useState(null);
   // Add this effect to detect screen size
   useEffect(() => {
     const handleResize = () => {
@@ -57,7 +58,7 @@ const Home = () => {
     const loadPosts = async () => {
       await fetchPosts();
     };
-    loadPosts();
+    loadPosts();2
   }, [fetchPosts]);
 
   useEffect(() => {
@@ -67,27 +68,45 @@ const Home = () => {
   }, [posts]);
 
   const getFilteredPosts = () => {
-    const postsToFilter = allPosts;
+    let postsToFilter = allPosts;
     
+    // Category filter
     const categoryFiltered = !selectedTag 
       ? postsToFilter 
       : postsToFilter.filter(post => post.category === selectedTag);
     
-    // Then filter by search query if present
-    if (!searchQuery.trim()) {
-      return categoryFiltered;
+    // Search filter
+    let filteredResults = !searchQuery.trim()
+      ? categoryFiltered
+      : categoryFiltered.filter(post => {
+          const lowerQuery = searchQuery.toLowerCase();
+          return post.title.toLowerCase().includes(lowerQuery) || 
+                post.description.toLowerCase().includes(lowerQuery);
+        });
+    
+    // Apply sorting if selected
+    if (sortBy) {
+      filteredResults = [...filteredResults].sort((a, b) => {
+        if (sortBy === 'time') {
+          // Sort by creation date (newest first)
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        } else if (sortBy === 'views') {
+          // Sort by view count (highest first)
+          return (b.views || 0) - (a.views || 0);
+        } else if (sortBy === 'related') {
+          // Sort by relatable count (highest first)
+          return (b.relatableCount || 0) - (a.relatableCount || 0);
+        }
+        return 0;
+      });
     }
     
-    const lowerQuery = searchQuery.toLowerCase();
-    return categoryFiltered.filter(post => 
-      post.title.toLowerCase().includes(lowerQuery) || 
-      post.description.toLowerCase().includes(lowerQuery)
-    );
+    return filteredResults;
   };
 
-  // Get the posts to display
+  // Get the posts to display with filters and sorting applied
   const filteredPosts = getFilteredPosts();
-
+  
   // Handle search input
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
@@ -132,6 +151,11 @@ const Home = () => {
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  // Handle sort change from Filter component
+  const handleSortChange = (sort) => {
+    setSortBy(sort);
   };
 
   return (
@@ -212,25 +236,10 @@ const Home = () => {
             }
           </button>
           </div>
-          {isDesktop && <Funnel />}
         </div>
 
         {/* Content and filters */}
         <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
-          
-          {/* Sidebar Tags and Meter */}
-          {!isDesktop & isFilterOpen && (
-
-            <div className="w-full lg:w-[260px] flex-shrink-0">
-            
-            <div className="sticky top-10 flex flex-col gap-4">
-              <Filter onFilterChange={handleFilterChange} initialFilter={selectedTag} />
-            </div>
-          </div>
-          )
-          }
-          
-
           {/* Posts Section */}
           <div className="flex-1 mt-0 flex flex-col gap-4 min-w-0 overflow-y-auto pr-1 scrollbar-hidden">
             {isLoading ? (
@@ -238,15 +247,17 @@ const Home = () => {
             ) : filteredPosts.length > 0 ? (
               filteredPosts.map((post) => (
                 <PostCard
-                  key={post.id}
-                  id={post.id}
-                  title={post.title}
-                  tag={post.category}
-                  warning={false}
-                  content={post.description}
-                  relatableCount={post.relatableCount || 0}
-                  views={post.views || 0}
-                  userRelated={post.userRelated || false}
+                key={post.id}
+                id={post.id}
+                title={post.title}
+                tag={post.category}
+                warning={post.warning || false}
+                content={post.description}
+                relatableCount={post.relatableCount || 0}
+                views={post.views || 0}
+                userRelated={post.userRelated || false}
+                isAudio={post.isAudio || false}
+                audioPath={post.audioPath || null}  // Make sure this is passed!
                 />
               ))
             ) : (
@@ -254,7 +265,16 @@ const Home = () => {
             )}
           </div>
 
-
+          {/* Sidebar Tags and Meter */}
+          <div className="w-full lg:w-[260px] flex-shrink-0">
+            <div className="sticky top-10 flex flex-col gap-4">
+              <Filter 
+                onFilterChange={handleFilterChange} 
+                initialFilter={selectedTag} 
+                onSortChange={handleSortChange} 
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
